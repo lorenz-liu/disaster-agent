@@ -203,7 +203,9 @@ class DefaultValueFiller(PostProcessor):
     """Fill in minimal default values for missing fields."""
 
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        # Only set defaults for fields that should always have a value
+        # Generate patient_id if missing
+        if "patient_id" not in data or data["patient_id"] is None:
+            data["patient_id"] = str(uuid.uuid4())
 
         # Set default status if missing
         if "status" not in data or data["status"] is None:

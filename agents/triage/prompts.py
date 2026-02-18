@@ -10,13 +10,14 @@ IMPORTANT:
 - Do not include any explanatory text before or after the JSON.
 - Use null for any field where information is not provided or you are uncertain.
 - Only include values you are confident about based on the description.
+- Do not generate patient_id - leave it as null (it will be auto-generated).
 
 Patient Description:
 {description}
 
 Output a JSON object with the following structure:
 {{
-  "patient_id": "string (generate if not provided, e.g., 'P-001')",
+  "patient_id": null,
   "name": "string (use 'Unknown' if not provided)",
   "age": number or null,
   "gender": "Male" | "Female" | "Unknown" | null,
@@ -90,7 +91,7 @@ Guidelines:
 - Determine acuity using START triage principles ONLY if enough information is provided
 - Set deceased=true only if explicitly stated or incompatible with life
 - Use null for any field where information is not provided or uncertain
-- Generate reasonable patient_id if not provided (e.g., "P-001")
+- Always set patient_id to null (will be auto-generated as UUID)
 - Set predicted_death_timestamp to null if not enough information to predict
 
 Output JSON:"""
@@ -102,7 +103,7 @@ Input: "35-year-old female, car accident, complaining of severe chest pain, HR 1
 
 Output:
 {{
-  "patient_id": "P-001",
+  "patient_id": null,
   "name": "Unknown",
   "age": 35,
   "gender": "Female",

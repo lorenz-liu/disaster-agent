@@ -193,7 +193,6 @@ class RequiredFieldsRule(ValidationRule):
     """Validate all required fields are present."""
 
     REQUIRED_FIELDS = [
-        "patient_id",
         "description",
     ]
 
@@ -203,6 +202,8 @@ class RequiredFieldsRule(ValidationRule):
         for field in self.REQUIRED_FIELDS:
             if field not in data or data[field] is None:
                 errors.append(f"Required field '{field}' is missing or None")
+
+        # patient_id will be auto-generated if missing, so we don't validate it here
 
         return len(errors) == 0, errors
 
