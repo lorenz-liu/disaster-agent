@@ -27,7 +27,11 @@ class VitalSignsRangeRule(ValidationRule):
 
     def validate(self, data: Dict[str, Any]) -> Tuple[bool, List[str]]:
         errors = []
-        vital_signs = data.get("vital_signs", {})
+        vital_signs = data.get("vital_signs")
+
+        # Skip if vital signs is None
+        if vital_signs is None:
+            return True, []
 
         # Heart rate: 0-300 bpm (extreme range)
         hr = vital_signs.get("heart_rate")
@@ -35,18 +39,19 @@ class VitalSignsRangeRule(ValidationRule):
             errors.append(f"Heart rate {hr} is out of plausible range (0-300)")
 
         # Blood pressure
-        bp = vital_signs.get("blood_pressure", {})
-        systolic = bp.get("systolic")
-        diastolic = bp.get("diastolic")
+        bp = vital_signs.get("blood_pressure")
+        if bp is not None:
+            systolic = bp.get("systolic")
+            diastolic = bp.get("diastolic")
 
-        if systolic is not None and (systolic < 0 or systolic > 300):
-            errors.append(f"Systolic BP {systolic} is out of plausible range (0-300)")
+            if systolic is not None and (systolic < 0 or systolic > 300):
+                errors.append(f"Systolic BP {systolic} is out of plausible range (0-300)")
 
-        if diastolic is not None and (diastolic < 0 or diastolic > 200):
-            errors.append(f"Diastolic BP {diastolic} is out of plausible range (0-200)")
+            if diastolic is not None and (diastolic < 0 or diastolic > 200):
+                errors.append(f"Diastolic BP {diastolic} is out of plausible range (0-200)")
 
-        if systolic is not None and diastolic is not None and systolic < diastolic:
-            errors.append(f"Systolic BP ({systolic}) cannot be less than diastolic BP ({diastolic})")
+            if systolic is not None and diastolic is not None and systolic < diastolic:
+                errors.append(f"Systolic BP ({systolic}) cannot be less than diastolic BP ({diastolic})")
 
         # Respiratory rate: 0-100 breaths/min
         rr = vital_signs.get("respiratory_rate")
@@ -71,7 +76,11 @@ class GlasgowComaScaleRule(ValidationRule):
 
     def validate(self, data: Dict[str, Any]) -> Tuple[bool, List[str]]:
         errors = []
-        consciousness = data.get("consciousness", {})
+        consciousness = data.get("consciousness")
+
+        # Skip if consciousness is None
+        if consciousness is None:
+            return True, []
 
         eye = consciousness.get("eye_response")
         verbal = consciousness.get("verbal_response")
@@ -159,8 +168,12 @@ class InjuryCapabilityConsistencyRule(ValidationRule):
 
     def validate(self, data: Dict[str, Any]) -> Tuple[bool, List[str]]:
         warnings = []  # These are warnings, not hard errors
-        injuries = data.get("injuries", [])
-        capabilities = data.get("required_medical_capabilities", {})
+        injuries = data.get("injuries")
+        capabilities = data.get("required_medical_capabilities")
+
+        # Skip if injuries or capabilities is None
+        if injuries is None or capabilities is None:
+            return True, []
 
         # Check if injury locations suggest certain capabilities
         for injury in injuries:

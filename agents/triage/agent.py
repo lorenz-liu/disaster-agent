@@ -100,7 +100,12 @@ class PatientTriageAgent:
         if verbose:
             print("✓ Post-processing complete")
             print(f"  - Acuity: {processed_data.get('acuity')}")
-            print(f"  - GCS Total: {processed_data.get('consciousness', {}).get('total_score')}")
+
+            # Safely get GCS total
+            consciousness = processed_data.get('consciousness')
+            gcs_total = consciousness.get('total_score') if consciousness else None
+            print(f"  - GCS Total: {gcs_total}")
+
             print(f"  - Predicted Death: {processed_data.get('predicted_death_timestamp')}")
 
         # Step 3: Validation

@@ -186,11 +186,79 @@ This will:
 - Fills default values
 
 ### Stage 3: Validation
-- Checks vital signs are in plausible ranges
-- Validates GCS scores (3-15)
-- Ensures deceased status consistency
-- Warns about injury-capability mismatches
-- Validates all required fields present
+The system applies the following validation rules to ensure medical plausibility and data integrity:
+
+#### 1. Required Fields Validation
+- **Description**: Must be present and non-null
+- **Patient ID**: Auto-generated with UUID if missing
+- **Rationale**: Ensures minimum viable data for patient tracking
+
+#### 2. Vital Signs Range Validation
+Validates physiological parameters are within extreme but plausible ranges:
+- **Heart Rate**: 0-300 bpm
+- **Systolic Blood Pressure**: 0-300 mmHg
+- **Diastolic Blood Pressure**: 0-200 mmHg
+- **Blood Pressure Consistency**: Systolic must be ≥ diastolic
+- **Respiratory Rate**: 0-100 breaths/min
+- **Oxygen Saturation**: 0-100%
+- **Temperature**: 25-45°C
+
+**Note**: These are extreme ranges to accommodate unusual but possible cases. Values outside these ranges are flagged as errors.
+
+**Behavior**: Skips validation if vital signs data is not provided (null).
+
+#### 3. Glasgow Coma Scale (GCS) Validation
+Validates neurological assessment scores:
+- **Eye Response**: 1-4
+- **Verbal Response**: 1-5
+- **Motor Response**: 1-6
+- **Total Score**: 3-15
+- **Component Consistency**: If all components are present, validates that total = eye + verbal + motor
+
+**Behavior**: Skips validation if consciousness data is not provided (null).
+
+#### 4. Age Range Validation
+- **Range**: 0-120 years
+- **Rationale**: Accommodates neonates to supercentenarians
+
+**Behavior**: Skips validation if age is not provided (null).
+
+#### 5. Deceased Status Consistency
+Ensures logical consistency between deceased flag and acuity:
+- If `deceased = true`, then `acuity` should be "Deceased"
+- If `acuity = "Deceased"`, then `deceased` should be true
+
+**Behavior**: Only validates if both fields are present.
+
+#### 6. Injury-Capability Consistency (Warning Only)
+Provides warnings (not errors) when injuries suggest specific medical capabilities:
+
+**Location-Based Capability Mapping**:
+- **Head injuries** → Trauma center, Neurosurgical
+- **Neck injuries** → Trauma center, Vascular, ENT
+- **Chest injuries** → Trauma center, Thoracic, Cardiac
+- **Back injuries** → Trauma center, Orthopedic
+- **Pelvis injuries** → Trauma center, Orthopedic
+- **Abdomen injuries** → Trauma center, Hepatobiliary
+- **Upper limb injuries** → Orthopedic
+- **Lower limb injuries** → Orthopedic
+
+**Mechanism-Based Capability Mapping**:
+- **Thermal injuries** → Burn unit
+- **Blast injuries** → Trauma center
+- **Chemical exposure** → Trauma center
+- **Radiation exposure** → Trauma center
+
+**Behavior**:
+- Generates warnings (not errors) when injury patterns suggest capabilities not marked as required
+- Skips validation if injuries or capabilities data is not provided (null)
+- Warnings inform but do not block processing
+
+#### Validation Philosophy
+- **Permissive by Design**: Most fields are optional to accommodate incomplete information
+- **Null Tolerance**: Validation rules skip gracefully when data is not provided
+- **Medical Plausibility**: Ranges are intentionally broad to avoid false rejections
+- **Warnings vs Errors**: Capability mismatches generate warnings to inform clinicians without blocking triage
 
 ### Stage 4: Schema Validation
 - Pydantic validates against PatientType schema
