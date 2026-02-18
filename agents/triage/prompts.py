@@ -57,12 +57,15 @@ Inside the <thinking> tags, analyze the patient step by step:
 After your thinking, call the extract_patient_data function with all the extracted information.
 
 IMPORTANT:
-- Only include fields where you have confident information from the description
-- Omit any field where information is not provided or you are uncertain
+- Use clinical reasoning to infer missing SALT assessment fields (can_walk, can_wave, etc.) based on the overall patient presentation
+- If a patient is described as "alert and responsive" or "talking normally", infer they can wave and likely obey commands
+- If a patient has severe injuries but is conscious, infer they can wave but may not be able to walk
+- If a patient is unconscious or unresponsive, infer they cannot walk or wave
+- If vital signs are stable and injuries are minor, infer normal mobility (can walk and wave)
 - For patient_id, always set to null (will be auto-generated)
 - For empty string fields (like lifesaving_intervention_performed, assigned_facility), use empty string "" if no information
 - For numeric fields that represent "none", use 0
-- For boolean fields in capabilities/resources, omit the entire object if you don't have information
+- Only omit fields where you truly have no basis for inference (e.g., exact vital signs not mentioned)
 
 Patient Description:
 {description}
