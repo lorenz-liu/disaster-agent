@@ -315,9 +315,33 @@ class DefaultValueFiller(PostProcessor):
         return data
 
 
+class InjuryNormalizer(PostProcessor):
+    """Normalize injury data to ensure locations and mechanisms are arrays."""
+
+    def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        injuries = data.get("injuries")
+
+        if injuries is None:
+            return data
+
+        # Normalize each injury
+        for injury in injuries:
+            # Convert locations to array if it's a string
+            if "locations" in injury and isinstance(injury["locations"], str):
+                injury["locations"] = [injury["locations"]]
+
+            # Convert mechanisms to array if it's a string
+            if "mechanisms" in injury and isinstance(injury["mechanisms"], str):
+                injury["mechanisms"] = [injury["mechanisms"]]
+
+        data["injuries"] = injuries
+        return data
+
+
 # Registry of post-processors (order matters!)
 POST_PROCESSORS = [
     DefaultValueFiller(),  # Fill defaults first
+    InjuryNormalizer(),  # Normalize injury arrays
     GCSCalculator(),  # Calculate GCS
     AcuityDetermination(),  # Determine acuity
     MortalityPredictor(),  # Predict mortality

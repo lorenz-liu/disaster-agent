@@ -68,6 +68,7 @@ def main():
         return
 
     print("\n✓ Triage completed successfully")
+    print(patient)
 
     triage_agent.unload_model()
 
@@ -94,7 +95,6 @@ def main():
         dest = decision['destination']
         print(f"\nDestination:")
         print(f"  - Facility: {dest['facility_name']}")
-        print(f"  - Facility ID: {dest['facility_id']}")
         print(f"  - ETA: {dest['eta_minutes']:.1f} minutes")
 
         # Display alternatives if available
@@ -103,10 +103,6 @@ def main():
             print(f"\nAlternative Facilities ({len(alternatives)}):")
             for i, alt in enumerate(alternatives, 1):
                 print(f"  {i}. {alt['facility_name']} (ETA: {alt['eta_minutes']:.1f} min)")
-
-        # Display solver status
-        if 'solver_status' in decision:
-            print(f"\nSolver Status: {decision['solver_status']}")
 
 
 if __name__ == "__main__":
