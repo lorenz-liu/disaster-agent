@@ -5,17 +5,21 @@ Modify these templates to adjust LLM behavior without changing code.
 
 PATIENT_EXTRACTION_PROMPT = """You are a medical triage expert. Extract structured patient information from the natural language description below.
 
-IMPORTANT: Output ONLY valid JSON matching the exact schema provided. Do not include any explanatory text before or after the JSON.
+IMPORTANT:
+- Output ONLY valid JSON matching the exact schema provided.
+- Do not include any explanatory text before or after the JSON.
+- Use null for any field where information is not provided or you are uncertain.
+- Only include values you are confident about based on the description.
 
 Patient Description:
 {description}
 
 Output a JSON object with the following structure:
 {{
-  "patient_id": "string (generate if not provided)",
+  "patient_id": "string (generate if not provided, e.g., 'P-001')",
   "name": "string (use 'Unknown' if not provided)",
-  "age": number (estimate if not exact),
-  "gender": "Male" | "Female" | "Unknown",
+  "age": number or null,
+  "gender": "Male" | "Female" | "Unknown" | null,
   "vital_signs": {{
     "heart_rate": number or null,
     "blood_pressure": {{
@@ -25,14 +29,14 @@ Output a JSON object with the following structure:
     "respiratory_rate": number or null,
     "oxygen_saturation": number or null,
     "temperature": number or null
-  }},
+  }} or null,
   "consciousness": {{
     "eye_response": number (1-4) or null,
     "verbal_response": number (1-5) or null,
     "motor_response": number (1-6) or null,
     "total_score": number (3-15) or null
-  }},
-  "acuity": "Deceased" | "Minor" | "Severe" | "Critical" | "Undefined",
+  }} or null,
+  "acuity": "Deceased" | "Minor" | "Severe" | "Critical" | "Undefined" | null,
   "injuries": [
     {{
       "locations": ["Head" | "Neck" | "Chest" | "Back" | "Pelvis" | "Abdomen" | "Limbs (Upper)" | "Limbs (Lower)"],
@@ -40,54 +44,54 @@ Output a JSON object with the following structure:
       "severity": "Deceased" | "Minor" | "Severe" | "Critical",
       "description": "string"
     }}
-  ],
+  ] or null,
   "required_medical_capabilities": {{
-    "trauma_center": boolean,
-    "neurosurgical": boolean,
-    "orthopedic": boolean,
-    "ophthalmology": boolean,
-    "burn": boolean,
-    "pediatric": boolean,
-    "obstetric": boolean,
-    "cardiac": boolean,
-    "thoracic": boolean,
-    "vascular": boolean,
-    "ent": boolean,
-    "hepatobiliary": boolean
-  }},
+    "trauma_center": boolean or null,
+    "neurosurgical": boolean or null,
+    "orthopedic": boolean or null,
+    "ophthalmology": boolean or null,
+    "burn": boolean or null,
+    "pediatric": boolean or null,
+    "obstetric": boolean or null,
+    "cardiac": boolean or null,
+    "thoracic": boolean or null,
+    "vascular": boolean or null,
+    "ent": boolean or null,
+    "hepatobiliary": boolean or null
+  }} or null,
   "required_medical_resources": {{
-    "ward": number,
-    "ordinary_icu": number,
-    "operating_room": number,
-    "ventilator": number,
-    "prbc_unit": number,
-    "isolation": number,
-    "decontamination_unit": number,
-    "ct_scanner": number,
-    "oxygen_cylinder": number,
-    "interventional_radiology": number
-  }},
+    "ward": number or null,
+    "ordinary_icu": number or null,
+    "operating_room": number or null,
+    "ventilator": number or null,
+    "prbc_unit": number or null,
+    "isolation": number or null,
+    "decontamination_unit": number or null,
+    "ct_scanner": number or null,
+    "oxygen_cylinder": number or null,
+    "interventional_radiology": number or null
+  }} or null,
   "description": "string (original or summarized description)",
-  "predicted_death_timestamp": number (unix timestamp, 0 if not applicable),
+  "predicted_death_timestamp": number (unix timestamp) or null,
   "status": "Unassigned",
   "assigned_facility": null,
-  "action_logs": ["string"],
-  "deceased": boolean,
+  "action_logs": ["string"] or [],
+  "deceased": boolean or null,
   "location": {{
-    "latitude": number,
-    "longitude": number
-  }}
+    "latitude": number or null,
+    "longitude": number or null
+  }} or null
 }}
 
 Guidelines:
-- Use medical knowledge to infer required capabilities from injuries
-- Estimate resource needs based on injury severity
+- Use medical knowledge to infer required capabilities from injuries ONLY if confident
+- Estimate resource needs based on injury severity ONLY if confident
 - Calculate Glasgow Coma Scale if consciousness level is described
-- Determine acuity using START triage principles (Critical: immediate life threat, Severe: urgent care needed, Minor: can wait)
+- Determine acuity using START triage principles ONLY if enough information is provided
 - Set deceased=true only if explicitly stated or incompatible with life
-- Use null for unknown vital signs rather than guessing
+- Use null for any field where information is not provided or uncertain
 - Generate reasonable patient_id if not provided (e.g., "P-001")
-- Set predicted_death_timestamp to 0 if patient is stable or minor
+- Set predicted_death_timestamp to null if not enough information to predict
 
 Output JSON:"""
 
@@ -151,12 +155,12 @@ Output:
     "interventional_radiology": 0
   }},
   "description": "35-year-old female, car accident, complaining of severe chest pain, HR 120, BP 85/50, RR 28, SpO2 88%, GCS 14 (E4V4M6), suspected pneumothorax",
-  "predicted_death_timestamp": 0,
+  "predicted_death_timestamp": null,
   "status": "Unassigned",
   "assigned_facility": null,
   "action_logs": [],
   "deceased": false,
-  "location": {{"latitude": 0.0, "longitude": 0.0}}
+  "location": null
 }}
 
 ---

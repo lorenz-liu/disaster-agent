@@ -1,34 +1,35 @@
+from typing import Optional
 from pydantic import BaseModel
 from .enums import HealthcareFacilityLevelEnum
 from .types import LocationType
 
 
 class FacilityCapabilitiesType(BaseModel):
-    trauma_center: bool
-    neurosurgical: bool
-    orthopedic: bool
-    ophthalmology: bool
-    burn: bool
-    pediatric: bool
-    obstetric: bool
-    cardiac: bool
-    thoracic: bool
-    vascular: bool
-    ent: bool
-    hepatobiliary: bool
+    trauma_center: Optional[bool] = None
+    neurosurgical: Optional[bool] = None
+    orthopedic: Optional[bool] = None
+    ophthalmology: Optional[bool] = None
+    burn: Optional[bool] = None
+    pediatric: Optional[bool] = None
+    obstetric: Optional[bool] = None
+    cardiac: Optional[bool] = None
+    thoracic: Optional[bool] = None
+    vascular: Optional[bool] = None
+    ent: Optional[bool] = None
+    hepatobiliary: Optional[bool] = None
 
 
 class MedicalResourcesType(BaseModel):
-    ward: int
-    ordinary_icu: int
-    operating_room: int
-    ventilator: int
-    prbc_unit: int
-    isolation: int
-    decontamination_unit: int
-    ct_scanner: int
-    oxygen_cylinder: int
-    interventional_radiology: int
+    ward: Optional[int] = None
+    ordinary_icu: Optional[int] = None
+    operating_room: Optional[int] = None
+    ventilator: Optional[int] = None
+    prbc_unit: Optional[int] = None
+    isolation: Optional[int] = None
+    decontamination_unit: Optional[int] = None
+    ct_scanner: Optional[int] = None
+    oxygen_cylinder: Optional[int] = None
+    interventional_radiology: Optional[int] = None
 
 
 class VehicleResourcesType(BaseModel):

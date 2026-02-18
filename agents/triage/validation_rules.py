@@ -194,27 +194,15 @@ class RequiredFieldsRule(ValidationRule):
 
     REQUIRED_FIELDS = [
         "patient_id",
-        "name",
-        "age",
-        "gender",
-        "vital_signs",
-        "consciousness",
-        "acuity",
-        "injuries",
-        "required_medical_capabilities",
-        "required_medical_resources",
         "description",
-        "status",
-        "deceased",
-        "location",
     ]
 
     def validate(self, data: Dict[str, Any]) -> Tuple[bool, List[str]]:
         errors = []
 
         for field in self.REQUIRED_FIELDS:
-            if field not in data:
-                errors.append(f"Required field '{field}' is missing")
+            if field not in data or data[field] is None:
+                errors.append(f"Required field '{field}' is missing or None")
 
         return len(errors) == 0, errors
 

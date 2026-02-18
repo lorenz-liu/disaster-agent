@@ -5,6 +5,7 @@ Modify these to adjust how derived values are calculated.
 
 from typing import Dict, Any
 import time
+import uuid
 
 
 class PostProcessor:
@@ -199,28 +200,22 @@ class ResourceEstimator(PostProcessor):
 
 
 class DefaultValueFiller(PostProcessor):
-    """Fill in default values for missing fields."""
+    """Fill in minimal default values for missing fields."""
 
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        # Set default status
-        if "status" not in data:
+        # Only set defaults for fields that should always have a value
+
+        # Set default status if missing
+        if "status" not in data or data["status"] is None:
             data["status"] = "Unassigned"
 
-        # Set default assigned_facility
-        if "assigned_facility" not in data:
-            data["assigned_facility"] = None
-
-        # Set default action_logs
+        # Set default action_logs if missing
         if "action_logs" not in data:
             data["action_logs"] = []
 
-        # Set default location if missing
-        if "location" not in data:
-            data["location"] = {"latitude": 0.0, "longitude": 0.0}
-
-        # Set default deceased
-        if "deceased" not in data:
-            data["deceased"] = False
+        # Set default name if missing
+        if "name" not in data or data["name"] is None:
+            data["name"] = "Unknown"
 
         return data
 

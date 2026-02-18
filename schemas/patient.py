@@ -43,19 +43,19 @@ class PatientInjuryType(BaseModel):
 
 class PatientType(BaseModel):
     patient_id: str
-    name: str
-    age: int
-    gender: GenderEnum
-    vital_signs: PatientVitalSignsType
-    consciousness: PatientConsciousnessType
-    acuity: PatientSeverityEnum
-    injuries: list[PatientInjuryType]
-    required_medical_capabilities: FacilityCapabilitiesType
-    required_medical_resources: MedicalResourcesType
+    name: str = "Unknown"
+    age: Optional[int] = None
+    gender: Optional[GenderEnum] = None
+    vital_signs: Optional[PatientVitalSignsType] = None
+    consciousness: Optional[PatientConsciousnessType] = None
+    acuity: Optional[PatientSeverityEnum] = None
+    injuries: Optional[list[PatientInjuryType]] = None
+    required_medical_capabilities: Optional[FacilityCapabilitiesType] = None
+    required_medical_resources: Optional[MedicalResourcesType] = None
     description: str
-    predicted_death_timestamp: int
-    status: PatientStatusEnum
+    predicted_death_timestamp: Optional[int] = None
+    status: PatientStatusEnum = PatientStatusEnum.UNASSIGNED
     assigned_facility: Optional[str] = None
-    action_logs: list[str]
-    deceased: bool
-    location: LocationType
+    action_logs: list[str] = []
+    deceased: Optional[bool] = None
+    location: Optional[LocationType] = None

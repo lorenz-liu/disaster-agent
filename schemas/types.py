@@ -1,6 +1,7 @@
+from typing import Optional
 from pydantic import BaseModel
 
 
 class LocationType(BaseModel):
-    latitude: float
-    longitude: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
