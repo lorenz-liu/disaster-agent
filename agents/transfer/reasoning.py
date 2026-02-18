@@ -183,7 +183,10 @@ class TransferReasoningGenerator:
         vital_signs_text = "Not available"
         if patient.vital_signs:
             vs = patient.vital_signs
-            vital_signs_text = f"HR: {vs.heart_rate}, BP: {vs.blood_pressure.systolic}/{vs.blood_pressure.diastolic}, RR: {vs.respiratory_rate}, SpO2: {vs.oxygen_saturation}%"
+            bp_text = "N/A"
+            if vs.blood_pressure and vs.blood_pressure.systolic and vs.blood_pressure.diastolic:
+                bp_text = f"{vs.blood_pressure.systolic}/{vs.blood_pressure.diastolic}"
+            vital_signs_text = f"HR: {vs.heart_rate or 'N/A'}, BP: {bp_text}, RR: {vs.respiratory_rate or 'N/A'}, SpO2: {vs.oxygen_saturation or 'N/A'}%"
 
         # Format destination capabilities
         dest_caps = []
