@@ -267,10 +267,76 @@ Provides warnings (not errors) when injuries suggest specific medical capabiliti
 
 ## Medical Logic
 
-### Acuity Determination (START Triage)
-- **Critical**: ≥2 abnormal vital signs OR critical injury
-- **Severe**: ≥1 abnormal vital sign OR severe injury
-- **Minor**: Stable vital signs, minor injuries
+### SALT Triage Protocol
+
+The system implements the **SALT (Sort, Assess, Lifesaving Interventions, Treatment/Transport)** mass casualty triage protocol, designed for speed, simplicity, and evidence-based resource allocation.
+
+#### 1. Sort (Global Sorting)
+Prioritize who needs individual assessment first:
+- **Walkers**: Can walk when asked → Likely Minimal
+- **Wavers**: Can wave but cannot walk → Likely Delayed
+- **Still**: Cannot move or wave → Assess first for Immediate or Dead
+
+#### 2. Assess (Individual Assessment)
+Evaluate patients using yes/no criteria:
+- Does the patient have a peripheral pulse?
+- Are they in respiratory distress?
+- Is hemorrhage controlled?
+- Do they follow commands or make purposeful movements?
+
+#### 3. Lifesaving Interventions (LSI)
+Perform rapid, sub-one-minute interventions during assessment:
+- Apply tourniquets/control major hemorrhage
+- Open the airway (give 2 rescue breaths for children)
+- Perform chest needle decompression
+- Administer auto-injector antidotes
+
+#### 4. Treatment/Transport (Categorization)
+Assign one of five SALT categories:
+
+- **Dead**: Not breathing even after opening the airway
+  - Deceased flag set to true
+  - No resource allocation
+  - Predicted death timestamp set to current time
+
+- **Expectant**: Breathing but unlikely to survive given current resource constraints
+  - Provided comfort care only
+  - Minimal resource allocation (ward bed)
+  - High mortality risk (death predicted in 1-2 hours)
+
+- **Immediate**: Fails one or more assessment questions but likely to survive with immediate care
+  - No peripheral pulse, severe respiratory distress, uncontrolled hemorrhage, or doesn't follow commands
+  - Requires immediate ICU, ventilator, operating room
+  - Moderate mortality risk (death predicted in 4-6 hours without treatment)
+
+- **Delayed**: Passes all assessment questions but has serious injuries requiring eventual care
+  - Can wait for treatment
+  - Requires ward bed, possible surgery later
+  - Low mortality risk
+
+- **Minimal**: Passes all assessment questions and has only minor injuries
+  - Walking wounded
+  - Minimal resource requirements
+  - Very low mortality risk
+
+### Acuity Determination Logic
+
+The system determines SALT category using this priority order:
+
+1. **SALT Assessment Data** (if available):
+   - `can_walk = true` → Minimal
+   - `can_walk = false` AND `can_wave = true` → Delayed
+   - `has_peripheral_pulse = false` → Immediate
+   - `in_respiratory_distress = true` → Immediate
+   - `hemorrhage_controlled = false` → Immediate
+   - `obeys_commands = false` → Immediate
+   - Passes all assessments + serious injuries → Delayed
+   - Passes all assessments + minor injuries → Minimal
+
+2. **Vital Signs Fallback** (if SALT assessment unavailable):
+   - ≥2 abnormal vital signs → Immediate
+   - ≥1 abnormal vital sign → Delayed
+   - Stable vital signs → Minimal
 
 Abnormal indicators:
 - RR < 10 or > 29

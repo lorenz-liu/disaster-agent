@@ -19,6 +19,17 @@ class BloodPressure(BaseModel):
     diastolic: Optional[float] = None
 
 
+class SALTAssessment(BaseModel):
+    """SALT Triage Assessment Criteria"""
+    can_walk: Optional[bool] = None  # Sort: Walker
+    can_wave: Optional[bool] = None  # Sort: Waver
+    obeys_commands: Optional[bool] = None  # Assess: Follows commands
+    has_peripheral_pulse: Optional[bool] = None  # Assess: Peripheral pulse present
+    in_respiratory_distress: Optional[bool] = None  # Assess: Respiratory distress
+    hemorrhage_controlled: Optional[bool] = None  # Assess: Major hemorrhage controlled
+    lifesaving_intervention_performed: Optional[str] = None  # LSI: What was done
+
+
 class PatientVitalSignsType(BaseModel):
     heart_rate: Optional[float] = None
     blood_pressure: BloodPressure
@@ -46,9 +57,10 @@ class PatientType(BaseModel):
     name: str = "Unknown"
     age: Optional[int] = None
     gender: Optional[GenderEnum] = None
+    salt_assessment: Optional[SALTAssessment] = None  # SALT triage assessment
     vital_signs: Optional[PatientVitalSignsType] = None
     consciousness: Optional[PatientConsciousnessType] = None
-    acuity: Optional[PatientSeverityEnum] = None
+    acuity: Optional[PatientSeverityEnum] = None  # SALT category: Black/Gray/Red/Yellow/Green
     injuries: Optional[list[PatientInjuryType]] = None
     required_medical_capabilities: Optional[FacilityCapabilitiesType] = None
     required_medical_resources: Optional[MedicalResourcesType] = None

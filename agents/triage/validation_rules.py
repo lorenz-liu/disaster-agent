@@ -127,20 +127,20 @@ class AgeRangeRule(ValidationRule):
 
 
 class DeceasedConsistencyRule(ValidationRule):
-    """Validate deceased status is consistent with other fields."""
+    """Validate deceased status is consistent with SALT category."""
 
     def validate(self, data: Dict[str, Any]) -> Tuple[bool, List[str]]:
         errors = []
         deceased = data.get("deceased", False)
         acuity = data.get("acuity")
 
-        # If deceased, acuity should be "Deceased"
-        if deceased and acuity != "Deceased":
-            errors.append(f"Patient marked as deceased but acuity is '{acuity}' (should be 'Deceased')")
+        # If deceased, acuity should be "Dead"
+        if deceased and acuity != "Dead":
+            errors.append(f"Patient marked as deceased but acuity is '{acuity}' (should be 'Dead')")
 
-        # If acuity is "Deceased", deceased should be True
-        if acuity == "Deceased" and not deceased:
-            errors.append(f"Patient acuity is 'Deceased' but deceased flag is False")
+        # If acuity is "Dead", deceased should be True
+        if acuity == "Dead" and not deceased:
+            errors.append(f"Patient acuity is 'Dead' but deceased flag is False")
 
         return len(errors) == 0, errors
 

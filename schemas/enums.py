@@ -27,11 +27,13 @@ class HealthcareFacilityLevelEnum(int, Enum):
 
 
 class PatientSeverityEnum(str, Enum):
-    DECEASED = "Deceased"
-    MINOR = "Minor"
-    SEVERE = "Severe"
-    CRITICAL = "Critical"
-    UNDEFINED = "Undefined"
+    """SALT Triage Categories"""
+    DEAD = "Dead"  # Not breathing even after opening airway
+    EXPECTANT = "Expectant"  # Unlikely to survive given resource constraints
+    IMMEDIATE = "Immediate"  # Likely to survive with immediate care
+    DELAYED = "Delayed"  # Serious injuries, can wait for care
+    MINIMAL = "Minimal"  # Minor injuries only
+    UNDEFINED = "Undefined"  # Not yet triaged
 
 
 class GenderEnum(str, Enum):

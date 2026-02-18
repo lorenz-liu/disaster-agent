@@ -1,9 +1,9 @@
 """
-Prompt templates for patient triage extraction.
+Prompt templates for patient triage extraction using SALT protocol.
 Modify these templates to adjust LLM behavior without changing code.
 """
 
-PATIENT_EXTRACTION_PROMPT = """You are a medical triage expert. Extract structured patient information from the natural language description below.
+PATIENT_EXTRACTION_PROMPT = """You are a medical triage expert trained in the SALT (Sort, Assess, Lifesaving Interventions, Treatment/Transport) mass casualty triage protocol.
 
 IMPORTANT:
 - Output ONLY valid JSON matching the exact schema provided.
@@ -11,6 +11,35 @@ IMPORTANT:
 - Use null for any field where information is not provided or you are uncertain.
 - Only include values you are confident about based on the description.
 - Do not generate patient_id - leave it as null (it will be auto-generated).
+
+## SALT Triage Protocol
+
+### 1. SORT (Global Sorting)
+- **Walkers (Green)**: Can walk when asked → Likely minimal injuries
+- **Wavers (Yellow)**: Can wave but cannot walk → Likely delayed priority
+- **Still (Red/Black)**: Cannot move or wave → Assess first for immediate/dead
+
+### 2. ASSESS (Individual Assessment)
+Ask these yes/no questions:
+- Does the patient have a peripheral pulse?
+- Are they in respiratory distress?
+- Is hemorrhage controlled?
+- Do they follow commands or make purposeful movements?
+
+### 3. LIFESAVING INTERVENTIONS (LSI)
+Note any rapid interventions performed:
+- Tourniquet/hemorrhage control
+- Airway opening
+- Chest decompression
+- Auto-injector antidotes
+
+### 4. TREATMENT/TRANSPORT (Categorization)
+Assign SALT category:
+- **Dead**: Not breathing even after opening airway
+- **Expectant**: Breathing but unlikely to survive given resource constraints
+- **Immediate**: Fails ≥1 assessment question but likely to survive with immediate care
+- **Delayed**: Passes all assessment questions but has serious injuries
+- **Minimal**: Passes all assessment questions, minor injuries only
 
 Patient Description:
 {description}
@@ -21,6 +50,15 @@ Output a JSON object with the following structure:
   "name": "string (use 'Unknown' if not provided)",
   "age": number or null,
   "gender": "Male" | "Female" | "Unknown" | null,
+  "salt_assessment": {{
+    "can_walk": boolean or null,
+    "can_wave": boolean or null,
+    "obeys_commands": boolean or null,
+    "has_peripheral_pulse": boolean or null,
+    "in_respiratory_distress": boolean or null,
+    "hemorrhage_controlled": boolean or null,
+    "lifesaving_intervention_performed": "string describing LSI" or null
+  }} or null,
   "vital_signs": {{
     "heart_rate": number or null,
     "blood_pressure": {{
@@ -37,12 +75,12 @@ Output a JSON object with the following structure:
     "motor_response": number (1-6) or null,
     "total_score": number (3-15) or null
   }} or null,
-  "acuity": "Deceased" | "Minor" | "Severe" | "Critical" | "Undefined" | null,
+  "acuity": "Dead" | "Expectant" | "Immediate" | "Delayed" | "Minimal" | "Undefined" | null,
   "injuries": [
     {{
       "locations": ["Head" | "Neck" | "Chest" | "Back" | "Pelvis" | "Abdomen" | "Limbs (Upper)" | "Limbs (Lower)"],
       "mechanisms": ["Blunt" | "Penetrating" | "Thermal" | "Blast" | "Drowning" | "Chemical" | "Radiation" | "Electrical" | "Hypothermia" | "Other"],
-      "severity": "Deceased" | "Minor" | "Severe" | "Critical",
+      "severity": "Dead" | "Expectant" | "Immediate" | "Delayed" | "Minimal",
       "description": "string"
     }}
   ] or null,
@@ -84,22 +122,27 @@ Output a JSON object with the following structure:
   }} or null
 }}
 
-Guidelines:
-- Use medical knowledge to infer required capabilities from injuries ONLY if confident
-- Estimate resource needs based on injury severity ONLY if confident
-- Calculate Glasgow Coma Scale if consciousness level is described
-- Determine acuity using START triage principles ONLY if enough information is provided
-- Set deceased=true only if explicitly stated or incompatible with life
+Guidelines for SALT Triage:
+- **Sort Phase**: Determine if patient can walk, wave, or is still
+- **Assess Phase**: Evaluate pulse, respiratory distress, hemorrhage control, command following
+- **LSI Phase**: Note any lifesaving interventions performed
+- **Categorize**:
+  - Dead if not breathing after airway opening
+  - Expectant if breathing but expectant (resource-limited survival)
+  - Immediate if fails any assessment but salvageable
+  - Delayed if passes all assessments but has serious injuries
+  - Minimal if passes all assessments with minor injuries only
 - Use null for any field where information is not provided or uncertain
 - Always set patient_id to null (will be auto-generated as UUID)
-- Set predicted_death_timestamp to null if not enough information to predict
+- Set deceased=true only for Dead category
+- Set predicted_death_timestamp based on category (Expectant/Immediate get timestamps, others null)
 
 Output JSON:"""
 
 
 FEW_SHOT_EXAMPLES = """
-Example 1:
-Input: "35-year-old female, car accident, complaining of severe chest pain, HR 120, BP 85/50, RR 28, SpO2 88%, GCS 14 (E4V4M6), suspected pneumothorax"
+Example 1 - IMMEDIATE:
+Input: "35-year-old female, car accident, severe chest pain, no radial pulse, gasping for air, bleeding controlled with tourniquet, GCS 14"
 
 Output:
 {{
@@ -107,26 +150,29 @@ Output:
   "name": "Unknown",
   "age": 35,
   "gender": "Female",
-  "vital_signs": {{
-    "heart_rate": 120,
-    "blood_pressure": {{"systolic": 85, "diastolic": 50}},
-    "respiratory_rate": 28,
-    "oxygen_saturation": 88,
-    "temperature": null
+  "salt_assessment": {{
+    "can_walk": false,
+    "can_wave": false,
+    "obeys_commands": true,
+    "has_peripheral_pulse": false,
+    "in_respiratory_distress": true,
+    "hemorrhage_controlled": true,
+    "lifesaving_intervention_performed": "Tourniquet applied to control hemorrhage"
   }},
+  "vital_signs": null,
   "consciousness": {{
     "eye_response": 4,
     "verbal_response": 4,
     "motor_response": 6,
     "total_score": 14
   }},
-  "acuity": "Critical",
+  "acuity": "Immediate",
   "injuries": [
     {{
       "locations": ["Chest"],
       "mechanisms": ["Blunt"],
-      "severity": "Critical",
-      "description": "Suspected pneumothorax with respiratory distress"
+      "severity": "Immediate",
+      "description": "Severe chest trauma with respiratory distress and absent peripheral pulse"
     }}
   ],
   "required_medical_capabilities": {{
@@ -139,7 +185,7 @@ Output:
     "obstetric": false,
     "cardiac": true,
     "thoracic": true,
-    "vascular": false,
+    "vascular": true,
     "ent": false,
     "hepatobiliary": false
   }},
@@ -148,14 +194,78 @@ Output:
     "ordinary_icu": 1,
     "operating_room": 1,
     "ventilator": 1,
-    "prbc_unit": 2,
+    "prbc_unit": 4,
     "isolation": 0,
     "decontamination_unit": 0,
     "ct_scanner": 1,
     "oxygen_cylinder": 2,
     "interventional_radiology": 0
   }},
-  "description": "35-year-old female, car accident, complaining of severe chest pain, HR 120, BP 85/50, RR 28, SpO2 88%, GCS 14 (E4V4M6), suspected pneumothorax",
+  "description": "35-year-old female, car accident, severe chest pain, no radial pulse, gasping for air, bleeding controlled with tourniquet, GCS 14",
+  "predicted_death_timestamp": null,
+  "status": "Unassigned",
+  "assigned_facility": null,
+  "action_logs": [],
+  "deceased": false,
+  "location": null
+}}
+
+Example 2 - MINIMAL:
+Input: "28-year-old female, broken arm from fall, walking and talking normally, good pulse"
+
+Output:
+{{
+  "patient_id": null,
+  "name": "Unknown",
+  "age": 28,
+  "gender": "Female",
+  "salt_assessment": {{
+    "can_walk": true,
+    "can_wave": true,
+    "obeys_commands": true,
+    "has_peripheral_pulse": true,
+    "in_respiratory_distress": false,
+    "hemorrhage_controlled": true,
+    "lifesaving_intervention_performed": null
+  }},
+  "vital_signs": null,
+  "consciousness": null,
+  "acuity": "Minimal",
+  "injuries": [
+    {{
+      "locations": ["Limbs (Upper)"],
+      "mechanisms": ["Blunt"],
+      "severity": "Minimal",
+      "description": "Suspected arm fracture"
+    }}
+  ],
+  "required_medical_capabilities": {{
+    "trauma_center": false,
+    "neurosurgical": false,
+    "orthopedic": true,
+    "ophthalmology": false,
+    "burn": false,
+    "pediatric": false,
+    "obstetric": false,
+    "cardiac": false,
+    "thoracic": false,
+    "vascular": false,
+    "ent": false,
+    "hepatobiliary": false
+  }},
+  "required_medical_resources": {{
+    "ward": 1,
+    "ordinary_icu": 0,
+    "operating_room": 0,
+    "ventilator": 0,
+    "prbc_unit": 0,
+    "isolation": 0,
+    "decontamination_unit": 0,
+    "ct_scanner": 0,
+    "oxygen_cylinder": 0,
+    "interventional_radiology": 0
+  }},
+  "description": "28-year-old female, broken arm from fall, walking and talking normally, good pulse",
   "predicted_death_timestamp": null,
   "status": "Unassigned",
   "assigned_facility": null,

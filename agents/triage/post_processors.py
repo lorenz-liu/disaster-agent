@@ -49,94 +49,129 @@ class GCSCalculator(PostProcessor):
 
 class AcuityDetermination(PostProcessor):
     """
-    Determine or validate acuity based on vital signs and injuries.
-    Uses START triage principles.
+    Determine or validate acuity based on SALT triage protocol.
     """
 
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        # If already marked as deceased, keep it
+        # If already marked as deceased, set to Dead
         if data.get("deceased", False):
-            data["acuity"] = "Deceased"
+            data["acuity"] = "Dead"
             return data
 
+        salt_assessment = data.get("salt_assessment")
         vital_signs = data.get("vital_signs")
         consciousness = data.get("consciousness")
         injuries = data.get("injuries")
 
-        # Skip if not enough data to determine acuity
+        # If LLM already set acuity and it's not Undefined, trust it
+        current_acuity = data.get("acuity")
+        if current_acuity not in [None, "Undefined"]:
+            return data
+
+        # Try to determine acuity using SALT logic
+        if salt_assessment is not None:
+            # SALT Sort Phase
+            can_walk = salt_assessment.get("can_walk")
+            can_wave = salt_assessment.get("can_wave")
+
+            # SALT Assess Phase
+            has_pulse = salt_assessment.get("has_peripheral_pulse")
+            in_distress = salt_assessment.get("in_respiratory_distress")
+            hemorrhage_controlled = salt_assessment.get("hemorrhage_controlled")
+            obeys_commands = salt_assessment.get("obeys_commands")
+
+            # Determine category based on SALT
+            if can_walk is True:
+                # Walkers are typically Minimal
+                suggested_acuity = "Minimal"
+            elif can_walk is False and can_wave is True:
+                # Wavers are typically Delayed
+                suggested_acuity = "Delayed"
+            elif has_pulse is False:
+                # No pulse → likely Dead or Immediate depending on salvageability
+                suggested_acuity = "Immediate"  # Assume salvageable unless stated otherwise
+            elif in_distress is True or hemorrhage_controlled is False:
+                # Fails assessment → Immediate
+                suggested_acuity = "Immediate"
+            elif obeys_commands is False:
+                # Doesn't follow commands → Immediate
+                suggested_acuity = "Immediate"
+            else:
+                # Passes all assessments but check for serious injuries
+                has_serious_injury = False
+                if injuries is not None:
+                    has_serious_injury = any(
+                        injury.get("severity") in ["Immediate", "Delayed"] for injury in injuries
+                    )
+
+                if has_serious_injury:
+                    suggested_acuity = "Delayed"
+                else:
+                    suggested_acuity = "Minimal"
+
+            data["acuity"] = suggested_acuity
+            return data
+
+        # Fallback: Use vital signs if SALT assessment not available
         if vital_signs is None and consciousness is None and injuries is None:
             return data
 
-        # Critical indicators
+        # Critical indicators (fallback logic)
         critical_indicators = []
 
-        # Check vital signs if available
         if vital_signs is not None:
-            # Respiratory rate
             rr = vital_signs.get("respiratory_rate")
-            if rr is not None:
-                if rr < 10 or rr > 29:
-                    critical_indicators.append("abnormal_respiratory_rate")
+            if rr is not None and (rr < 10 or rr > 29):
+                critical_indicators.append("abnormal_respiratory_rate")
 
-            # Oxygen saturation
             spo2 = vital_signs.get("oxygen_saturation")
             if spo2 is not None and spo2 < 90:
                 critical_indicators.append("low_oxygen_saturation")
 
-            # Blood pressure (hypotension)
             bp = vital_signs.get("blood_pressure")
             if bp is not None:
                 systolic = bp.get("systolic")
                 if systolic is not None and systolic < 90:
                     critical_indicators.append("hypotension")
 
-            # Heart rate
             hr = vital_signs.get("heart_rate")
-            if hr is not None:
-                if hr < 50 or hr > 120:
-                    critical_indicators.append("abnormal_heart_rate")
+            if hr is not None and (hr < 50 or hr > 120):
+                critical_indicators.append("abnormal_heart_rate")
 
-        # Check GCS if available
         if consciousness is not None:
             gcs_total = consciousness.get("total_score")
             if gcs_total is not None and gcs_total < 13:
                 critical_indicators.append("altered_consciousness")
 
-        # Check injury severity if available
         has_critical_injury = False
         has_severe_injury = False
         if injuries is not None:
             has_critical_injury = any(
-                injury.get("severity") == "Critical" for injury in injuries
+                injury.get("severity") in ["Immediate", "Dead"] for injury in injuries
             )
             has_severe_injury = any(
-                injury.get("severity") == "Severe" for injury in injuries
+                injury.get("severity") == "Delayed" for injury in injuries
             )
 
-        # Determine acuity
+        # Map to SALT categories
         if len(critical_indicators) >= 2 or has_critical_injury:
-            suggested_acuity = "Critical"
+            suggested_acuity = "Immediate"
         elif len(critical_indicators) >= 1 or has_severe_injury:
-            suggested_acuity = "Severe"
+            suggested_acuity = "Delayed"
         else:
-            suggested_acuity = "Minor"
+            suggested_acuity = "Minimal"
 
-        # If LLM didn't set acuity or set it to "Undefined", use our calculation
-        current_acuity = data.get("acuity")
-        if current_acuity in [None, "Undefined"]:
-            data["acuity"] = suggested_acuity
-
+        data["acuity"] = suggested_acuity
         return data
 
 
 class MortalityPredictor(PostProcessor):
     """
-    Predict mortality risk and set predicted_death_timestamp.
-    Simple rule-based approach.
+    Predict mortality risk and set predicted_death_timestamp based on SALT category.
     """
 
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        # If already deceased, set timestamp to current time
+        # If already deceased (Dead), set timestamp to current time
         if data.get("deceased", False):
             data["predicted_death_timestamp"] = int(time.time())
             return data
@@ -148,29 +183,39 @@ class MortalityPredictor(PostProcessor):
         # Calculate risk score
         risk_score = 0
 
-        # Critical acuity
-        if acuity == "Critical":
+        # SALT category-based risk
+        if acuity == "Dead":
+            # Already dead
+            data["predicted_death_timestamp"] = int(time.time())
+            data["deceased"] = True
+            return data
+        elif acuity == "Expectant":
+            # Expectant - high mortality risk
+            risk_score += 5
+        elif acuity == "Immediate":
+            # Immediate - moderate mortality risk without treatment
             risk_score += 3
-        elif acuity == "Severe":
+        elif acuity == "Delayed":
+            # Delayed - low mortality risk
             risk_score += 1
+        elif acuity == "Minimal":
+            # Minimal - very low mortality risk
+            risk_score += 0
 
-        # Check vital signs if available
+        # Additional risk factors from vital signs
         if vital_signs is not None:
-            # Severe hypotension
             bp = vital_signs.get("blood_pressure")
             if bp is not None:
                 systolic = bp.get("systolic")
                 if systolic is not None and systolic < 70:
                     risk_score += 2
 
-            # Severe hypoxia
             spo2 = vital_signs.get("oxygen_saturation")
             if spo2 is not None and spo2 < 80:
                 risk_score += 2
 
-        # Check consciousness if available
+        # Additional risk from consciousness
         if consciousness is not None:
-            # Very low GCS
             gcs_total = consciousness.get("total_score")
             if gcs_total is not None and gcs_total <= 8:
                 risk_score += 2
@@ -191,7 +236,7 @@ class MortalityPredictor(PostProcessor):
 
 class ResourceEstimator(PostProcessor):
     """
-    Adjust resource requirements based on acuity and injuries.
+    Adjust resource requirements based on SALT category and injuries.
     """
 
     def process(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -203,19 +248,26 @@ class ResourceEstimator(PostProcessor):
         if resources is None:
             return data
 
-        # Ensure critical patients get ICU
-        if acuity == "Critical":
+        # SALT category-based resource allocation
+        if acuity == "Immediate":
+            # Immediate - needs ICU and likely surgery
             resources["ordinary_icu"] = max(resources.get("ordinary_icu") or 0, 1)
             resources["ventilator"] = max(resources.get("ventilator") or 0, 1)
-
-        # Ensure severe patients get ward bed
-        if acuity in ["Critical", "Severe"]:
+            resources["operating_room"] = max(resources.get("operating_room") or 0, 1)
+        elif acuity == "Expectant":
+            # Expectant - comfort care, minimal resources
+            resources["ward"] = max(resources.get("ward") or 0, 1)
+        elif acuity == "Delayed":
+            # Delayed - needs ward bed, possible surgery later
+            resources["ward"] = max(resources.get("ward") or 0, 1)
+        elif acuity == "Minimal":
+            # Minimal - outpatient or minimal ward
             resources["ward"] = max(resources.get("ward") or 0, 1)
 
         # Check if any injury requires surgery
         if injuries is not None:
             needs_surgery = any(
-                injury.get("severity") in ["Critical", "Severe"] for injury in injuries
+                injury.get("severity") in ["Immediate", "Delayed"] for injury in injuries
             )
             if needs_surgery:
                 resources["operating_room"] = max(resources.get("operating_room") or 0, 1)
