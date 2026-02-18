@@ -144,6 +144,44 @@ class OptimizationRules:
     ]
 
     # ========================================================================
+    # ACUITY-TO-FACILITY-LEVEL SCORING MATRIX
+    # ========================================================================
+    # Scores for assigning different acuity levels to different facility levels
+    # Positive scores = good match (reduces cost/increases preference)
+    # Negative scores = bad match (increases cost/decreases preference)
+    #
+    # Level 1: Definitive surgical care (best for Immediate)
+    # Level 2: Advanced trauma care (best for Delayed)
+    # Level 3: Initial stabilization (best for Minimal)
+
+    ACUITY_LEVEL_SCORES: Dict[int, Dict[str, int]] = {
+        1: {  # Level 1 - Definitive surgical care
+            "Dead": -2000,
+            "Expectant": -200,
+            "Immediate": 1000,
+            "Delayed": 200,
+            "Minimal": -500,
+            "Undefined": -200,
+        },
+        2: {  # Level 2 - Advanced trauma care
+            "Dead": -1500,
+            "Expectant": -50,
+            "Immediate": 200,
+            "Delayed": 1000,
+            "Minimal": -200,
+            "Undefined": -150,
+        },
+        3: {  # Level 3 - Initial stabilization
+            "Dead": -1000,
+            "Expectant": 0,
+            "Immediate": -500,
+            "Delayed": -100,
+            "Minimal": 1000,
+            "Undefined": -100,
+        },
+    }
+
+    # ========================================================================
     # RESOURCE STRESS CALCULATION
     # ========================================================================
     # Parameters for calculating resource stress penalty
@@ -182,6 +220,24 @@ class OptimizationRules:
         utilization_rate = required_qty / available_qty
         stress = (utilization_rate ** cls.RESOURCE_STRESS_EXPONENT) * cls.RESOURCE_STRESS_MULTIPLIER
         return stress
+
+    @classmethod
+    def get_acuity_level_score(cls, acuity: str, facility_level: int) -> int:
+        """
+        Get the score for assigning a patient with given acuity to a facility level.
+
+        Positive scores indicate good matches (reduce cost).
+        Negative scores indicate poor matches (increase cost).
+
+        Args:
+            acuity: Patient acuity level (Immediate, Delayed, Minimal, Expectant, Dead, Undefined)
+            facility_level: Facility level (1, 2, or 3)
+
+        Returns:
+            Score for this acuity-level combination
+        """
+        level_scores = cls.ACUITY_LEVEL_SCORES.get(facility_level, {})
+        return level_scores.get(acuity, 0)
 
 
 # ============================================================================

@@ -260,9 +260,13 @@ class TransferAgent:
             # Calculate resource stress
             resource_stress = self._calculate_resource_stress(facility)
 
+            # Get acuity-level score
+            acuity_level_score = self.rules.get_acuity_level_score(self.patient.acuity, facility.level)
+
             # Calculate total cost
+            # Note: We subtract the score because positive scores should reduce cost
             time_cost = eta * patient_weight
-            total_cost = time_cost + capability_penalty + resource_stress
+            total_cost = time_cost + capability_penalty + resource_stress - acuity_level_score
 
             # Add penalty for resource deficit
             if not has_resources:

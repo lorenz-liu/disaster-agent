@@ -258,12 +258,21 @@ class TransferOptimizer:
                             )
                             resource_stress += stress
 
+                # ============================================================
+                # TERM 5: Acuity-Level Score (preference for matching acuity to level)
+                # ============================================================
+                # Positive scores reduce cost (good match)
+                # Negative scores increase cost (poor match)
+                acuity_level_score = self.rules.get_acuity_level_score(p.acuity, f.level)
+
                 # Total cost for this assignment
+                # Note: We subtract the score because positive scores should reduce cost
                 total_cost = (
                     time_cost
                     + stewardship_penalty
                     + capability_penalty
                     + resource_stress
+                    - acuity_level_score
                 )
 
                 objective.SetCoefficient(
