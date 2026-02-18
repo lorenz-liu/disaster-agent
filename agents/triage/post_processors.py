@@ -296,6 +296,22 @@ class DefaultValueFiller(PostProcessor):
         if "name" not in data or data["name"] is None:
             data["name"] = "Unknown"
 
+        # Set default deceased if missing
+        if "deceased" not in data or data["deceased"] is None:
+            data["deceased"] = False
+
+        # Set default assigned_facility if missing
+        if "assigned_facility" not in data:
+            data["assigned_facility"] = None
+
+        # Convert empty strings to None for assigned_facility
+        if data.get("assigned_facility") == "":
+            data["assigned_facility"] = None
+
+        # Convert 0 to None for predicted_death_timestamp
+        if data.get("predicted_death_timestamp") == 0:
+            data["predicted_death_timestamp"] = None
+
         return data
 
 

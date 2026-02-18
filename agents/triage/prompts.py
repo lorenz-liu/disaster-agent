@@ -56,7 +56,13 @@ Inside the <thinking> tags, analyze the patient step by step:
 
 After your thinking, call the extract_patient_data function with all the extracted information.
 
-Use null for any field where information is not provided or you are uncertain.
+IMPORTANT:
+- Only include fields where you have confident information from the description
+- Omit any field where information is not provided or you are uncertain
+- For patient_id, always set to null (will be auto-generated)
+- For empty string fields (like lifesaving_intervention_performed, assigned_facility), use empty string "" if no information
+- For numeric fields that represent "none", use 0
+- For boolean fields in capabilities/resources, omit the entire object if you don't have information
 
 Patient Description:
 {description}
