@@ -32,7 +32,12 @@
       "vascular": false,
       "ent": true,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 8,
+      "helicopters": 1
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "toronto-general-hospital",
@@ -67,7 +72,12 @@
       "vascular": true,
       "ent": true,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 10,
+      "helicopters": 2
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "humber-river-hospital",
@@ -102,7 +112,12 @@
       "vascular": false,
       "ent": false,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 5,
+      "helicopters": 0
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "mount-sinai-hospital",
@@ -137,7 +152,12 @@
       "vascular": false,
       "ent": false,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 7,
+      "helicopters": 1
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "north-york-general-hospital",
@@ -172,7 +192,12 @@
       "vascular": false,
       "ent": false,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 6,
+      "helicopters": 0
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "sunnybrook-health-sciences-centre",
@@ -207,7 +232,12 @@
       "vascular": true,
       "ent": true,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 15,
+      "helicopters": 3
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "st-josephs-health-centre",
@@ -242,7 +272,12 @@
       "vascular": false,
       "ent": false,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 4,
+      "helicopters": 0
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "scarborough-general-hospital",
@@ -277,7 +312,12 @@
       "vascular": false,
       "ent": false,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 5,
+      "helicopters": 0
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "william-osler-health-centre",
@@ -312,7 +352,12 @@
       "vascular": false,
       "ent": false,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 6,
+      "helicopters": 0
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "st-michaels-hospital",
@@ -347,7 +392,12 @@
       "vascular": true,
       "ent": true,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 12,
+      "helicopters": 2
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "michael-garron-hospital",
@@ -382,7 +432,12 @@
       "vascular": false,
       "ent": false,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 5,
+      "helicopters": 0
+    },
+    "accepted_patients": []
   },
   {
     "facility_id": "hospital-for-sick-children",
@@ -417,6 +472,11 @@
       "vascular": true,
       "ent": true,
       "hepatobiliary": false
-    }
+    },
+    "vehicle_resources": {
+      "ambulances": 10,
+      "helicopters": 2
+    },
+    "accepted_patients": []
   }
 ]
