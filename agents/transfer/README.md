@@ -2,19 +2,21 @@
 
 Implements NATO medical doctrine (AJP-4.10) for MEDEVAC operations, creating evacuation chains that follow the Role 1 → Role 2 → Role 3 progression with strict adherence to the **10-1-2 timeline** (Golden Hour and Damage Control).
 
-Uses **Google OR-Tools** constraint optimization for single-destination assignments (MCI/PHE incidents).
+Uses **Google OR-Tools** constraint optimization for single-destination assignments (MCI/PHE incidents) with **LLM-generated reasoning** for explainable decision-making.
 
 ## Overview
 
 The Transfer Agent assigns triaged patients to healthcare facilities using:
 - **OR-Tools Constraint Optimization**: For single-destination assignments (MCI/PHE)
 - **Greedy Heuristic with NATO Constraints**: For evacuation chains (MEDEVAC)
+- **LLM-Based Reasoning Generation**: Detailed explanations of facility selection decisions
 
 ### Neuro-Symbolic Optimization
 
 Combines:
 - **Neural Component**: Mortality prediction based on patient acuity and vital signs
 - **Symbolic Component**: Constraint-based optimization for capability matching, resource allocation, and timeline compliance
+- **Explainability Component**: LLM-generated reasoning that explains why a facility was selected
 
 ## NATO Medical Doctrine (AJP-4.10)
 
@@ -29,7 +31,7 @@ The NATO medical system is organized into three roles:
 ### Clinical Timeline Constraints (10-1-2 Rule)
 
 | Doctrine Step | Target Timeline | Description |
-|---------------|----------------|-------------|
+|---------------|-----------------|-------------|
 | **Initial Aid** | 10 Minutes | First responder care at point of injury |
 | **Role 1** | 60 Minutes | Golden Hour - Initial stabilization |
 | **Role 2** | 120 Minutes | Damage Control - Advanced trauma care |
@@ -43,7 +45,7 @@ Triaged Patient + Available Facilities
          ↓
     ┌─────────────────────────────┐
     │  1. Calculate Slack Time    │
-    │     (Survival Window)        │
+    │     (Survival Window)       │
     └─────────────────────────────┘
          ↓
     ┌─────────────────────────────┐
@@ -265,16 +267,87 @@ facilities = [
     # ... more facilities
 ]
 
-# Create agent and decide transfer
+# Create agent and decide transfer (with LLM reasoning enabled)
 agent = TransferAgent(
     patient=patient,
     facilities=facilities,
     incident_type="MCI",  # or "MEDEVAC" or "PHE"
+    enable_reasoning=True,  # Enable detailed LLM-generated explanations
+    reasoning_config={
+        "api_key": "your-openrouter-api-key",
+        "model": "openai/gpt-4o-mini",
+        "base_url": "https://openrouter.ai/api/v1",
+    }
 )
 
 decision = agent.decide_transfer()
 print(decision)
 ```
+
+## LLM-Based Reasoning Generation
+
+The Transfer Agent can generate detailed, human-readable explanations of facility selection decisions using an LLM.
+
+### How It Works
+
+When `enable_reasoning=True`, the agent:
+
+1. **Runs OR-Tools optimization** to find the optimal facility
+2. **Collects context** including:
+   - Patient profile (acuity, injuries, vital signs, required capabilities/resources)
+   - Selected destination (facility details, ETA, distance, available capabilities/resources)
+   - Alternative facilities considered
+   - Optimization details (incident type, solver status)
+3. **Generates explanation** using LLM that addresses:
+   - Medical match (does facility have required capabilities?)
+   - Proximity (how does ETA compare to alternatives?)
+   - Resource stewardship (preserving scarce capabilities)
+   - Patient acuity urgency
+
+### Example Reasoning Output
+
+Instead of:
+```
+"Optimal facility selected using constraint optimization (ETA: 8.2 min)"
+```
+
+You get:
+```
+"St. Michael's Hospital was selected as the optimal destination for this 25-year-old
+patient with a broken right arm. The facility provides the required orthopedic
+capabilities needed for fracture management, with an excellent ETA of just 8.2 minutes.
+While Toronto General Hospital and Sunnybrook Health Sciences Centre were also
+considered, St. Michael's offers the best balance of proximity and appropriate care
+level for this Minimal acuity patient, avoiding unnecessary use of higher-level trauma
+resources that should be preserved for more critical cases."
+```
+
+### Configuration
+
+```python
+# Enable reasoning with custom configuration
+agent = TransferAgent(
+    patient=patient,
+    facilities=facilities,
+    enable_reasoning=True,  # Default: True
+    reasoning_config={
+        "api_key": "your-api-key",
+        "model": "openai/gpt-4o-mini",  # Faster and cheaper
+        "base_url": "https://openrouter.ai/api/v1",
+    }
+)
+
+# Disable reasoning for faster execution
+agent = TransferAgent(
+    patient=patient,
+    facilities=facilities,
+    enable_reasoning=False,  # Falls back to simple reasoning
+)
+```
+
+### Fallback Behavior
+
+If LLM reasoning generation fails (API error, timeout, etc.), the agent automatically falls back to simple reasoning without interrupting the transfer decision process.
 
 ### Decision Output
 
@@ -329,13 +402,18 @@ print(decision)
 ```python
 {
     "action": "Transfer",
-    "reasoning": "Optimal facility selected (ETA: 15.3 min)",
+    "reasoning": "St. Michael's Hospital was selected as the optimal destination for this 25-year-old patient with a broken right arm. The facility provides the required orthopedic capabilities needed for fracture management, with an excellent ETA of just 8.2 minutes. While Toronto General Hospital and Sunnybrook Health Sciences Centre were also considered, St. Michael's offers the best balance of proximity and appropriate care level for this Minimal acuity patient, avoiding unnecessary use of higher-level trauma resources that should be preserved for more critical cases.",
     "reasoning_code": "TRANSFER_OPTIMAL",
     "destination": {
-        "facility_id": "F-001",
-        "facility_name": "City General Hospital",
-        "eta_minutes": 15.3
-    }
+        "facility_id": "st-michaels-hospital",
+        "facility_name": "St. Michael's Hospital",
+        "eta_minutes": 8.2
+    },
+    "alternatives": [
+        {"facility_name": "Toronto General Hospital", "eta_minutes": 10.5},
+        {"facility_name": "Sunnybrook Health Sciences", "eta_minutes": 12.1}
+    ],
+    "solver_status": "OPTIMAL"
 }
 ```
 

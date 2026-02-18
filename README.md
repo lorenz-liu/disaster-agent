@@ -101,7 +101,13 @@ This system implements a complete workflow for disaster response:
 │  │        60 min Golden Hour   120 min Damage Control                    │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
-│  Output: Transfer Decision                                                  │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │  3. Generate LLM Reasoning (if enabled)                               │  │
+│  │     • Patient profile + Destination + Alternatives → LLM              │  │
+│  │     • Explains medical match, proximity, resource stewardship         │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  Output: Transfer Decision with Detailed Reasoning                          │
 └─────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼
@@ -110,7 +116,11 @@ This system implements a complete workflow for disaster response:
 │  ─────────────────────────────────────────────────────────────────────────  │
 │  {                                                                          │
 │    "action": "Transfer",                                                    │
-│    "reasoning": "Optimal facility selected (ETA: 8.2 min)",                 │
+│    "reasoning": "St. Michael's Hospital was selected as the optimal         │
+│                  destination for this 25-year-old patient with a broken     │
+│                  right arm. The facility provides the required orthopedic   │
+│                  capabilities needed for fracture management, with an       │
+│                  excellent ETA of just 8.2 minutes...",                     │
 │    "reasoning_code": "TRANSFER_OPTIMAL",                                    │
 │    "destination": {                                                         │
 │      "facility_id": "st-michaels-hospital",                                 │
@@ -179,6 +189,7 @@ Assigns triaged patients to optimal healthcare facilities using constraint-based
 - Configurable optimization rules (`rules.py`)
 - Resource stewardship (preserve scarce capabilities)
 - Timeline compliance (Golden Hour, Damage Control)
+- LLM-generated reasoning for explainable decision-making
 
 ## Schemas
 
