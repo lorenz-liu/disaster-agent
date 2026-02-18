@@ -52,6 +52,7 @@ class PatientTriageAgent:
         description: str,
         validate: bool = True,
         verbose: bool = False,
+        default_location: Optional[Dict[str, float]] = None,
     ) -> Optional[PatientType]:
         """
         Extract structured patient data from natural language description.
