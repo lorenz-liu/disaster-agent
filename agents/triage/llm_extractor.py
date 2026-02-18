@@ -5,6 +5,7 @@ LLM Extractor with support for local (vLLM) and OpenRouter platforms.
 import json
 import os
 from typing import Optional, Dict, Any
+from .schema_definition import PATIENT_EXTRACTION_TOOL
 
 
 class LLMExtractor:
@@ -103,28 +104,30 @@ class LLMExtractor:
             temperature: Sampling temperature (lower = more deterministic)
 
         Returns:
-            Extracted patient data as dictionary, or None if extraction fails
+            Tuple of (extracted patient data as dictionary, thinking process string),
+            or (None, None) if extraction fails
         """
         # Format the prompt
         prompt = prompt_template.format(description=description)
 
         # Generate based on platform
         if self.platform == "local":
-            generated_text = self._generate_local(prompt, max_new_tokens, temperature)
+            generated_text, thinking = self._generate_local(prompt, max_new_tokens, temperature)
         elif self.platform == "openrouter":
-            generated_text = self._generate_openrouter(prompt, max_new_tokens, temperature)
+            generated_text, thinking = self._generate_openrouter(prompt, max_new_tokens, temperature)
         else:
-            return None
+            return None, None
 
         if generated_text is None:
-            return None
+            return None, None
 
         # Extract JSON from response
-        return self._extract_json(generated_text)
+        patient_data = self._extract_json(generated_text)
+        return patient_data, thinking
 
     def _generate_local(
         self, prompt: str, max_tokens: int, temperature: float
-    ) -> Optional[str]:
+    ) -> tuple[Optional[str], Optional[str]]:
         """Generate using local vLLM."""
         if self.llm is None:
             self.load_model()
@@ -137,13 +140,16 @@ class LLMExtractor:
 
         outputs = self.llm.generate([prompt], sampling_params)
         if outputs and len(outputs) > 0:
-            return outputs[0].outputs[0].text
-        return None
+            full_text = outputs[0].outputs[0].text
+            # Extract thinking process
+            thinking = self._extract_thinking(full_text)
+            return full_text, thinking
+        return None, None
 
     def _generate_openrouter(
         self, prompt: str, max_tokens: int, temperature: float
-    ) -> Optional[str]:
-        """Generate using OpenRouter API."""
+    ) -> tuple[Optional[str], Optional[str]]:
+        """Generate using OpenRouter API with function calling for structured output."""
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -153,18 +159,45 @@ class LLMExtractor:
                         "content": prompt,
                     }
                 ],
+                tools=[PATIENT_EXTRACTION_TOOL],
+                tool_choice={"type": "function", "function": {"name": "extract_patient_data"}},
                 max_tokens=max_tokens,
                 temperature=temperature,
                 top_p=0.95,
             )
 
             if response.choices and len(response.choices) > 0:
-                return response.choices[0].message.content
-            return None
+                choice = response.choices[0]
+
+                # Extract thinking from the message content
+                thinking = None
+                if choice.message.content:
+                    thinking = self._extract_thinking(choice.message.content)
+
+                # Check if the model used function calling
+                if choice.message.tool_calls and len(choice.message.tool_calls) > 0:
+                    tool_call = choice.message.tool_calls[0]
+                    # Return the function arguments as JSON string
+                    return tool_call.function.arguments, thinking
+
+                # Fallback to regular content if no tool call
+                return choice.message.content, thinking
+            return None, None
 
         except Exception as e:
             print(f"OpenRouter API error: {e}")
+            return None, None
+
+    def _extract_thinking(self, text: str) -> Optional[str]:
+        """Extract content from <thinking> tags."""
+        if not text:
             return None
+
+        import re
+        match = re.search(r'<thinking>(.*?)</thinking>', text, re.DOTALL)
+        if match:
+            return match.group(1).strip()
+        return None
 
     def _extract_json(self, generated_text: str) -> Optional[Dict[str, Any]]:
         """Extract JSON from generated text."""

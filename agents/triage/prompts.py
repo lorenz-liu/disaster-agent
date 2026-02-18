@@ -3,14 +3,9 @@ Prompt templates for patient triage extraction using SALT protocol.
 Modify these templates to adjust LLM behavior without changing code.
 """
 
-PATIENT_EXTRACTION_PROMPT = """You are a medical triage expert trained in the SALT (Sort, Assess, Lifesaving Interventions, Treatment/Transport) mass casualty triage protocol.
+PATIENT_EXTRACTION_PROMPT_COT = """You are a medical triage expert trained in the SALT (Sort, Assess, Lifesaving Interventions, Treatment/Transport) mass casualty triage protocol.
 
-IMPORTANT:
-- Output ONLY valid JSON matching the exact schema provided.
-- Do not include any explanatory text before or after the JSON.
-- Use null for any field where information is not provided or you are uncertain.
-- Only include values you are confident about based on the description.
-- Do not generate patient_id - leave it as null (it will be auto-generated).
+Your task is to analyze the patient description and extract structured data.
 
 ## SALT Triage Protocol
 
@@ -41,103 +36,32 @@ Assign SALT category:
 - **Delayed**: Passes all assessment questions but has serious injuries
 - **Minimal**: Passes all assessment questions, minor injuries only
 
+## Instructions
+
+IMPORTANT: You MUST follow this two-step process:
+
+**Step 1: Think through the SALT protocol inside <thinking> tags**
+
+Inside the <thinking> tags, analyze the patient step by step:
+1. **SORT Phase**: Can the patient walk? Can they wave? Are they still?
+2. **ASSESS Phase**:
+   - Do they have a peripheral pulse?
+   - Are they in respiratory distress?
+   - Is hemorrhage controlled?
+   - Do they obey commands?
+3. **LSI Phase**: What lifesaving interventions were performed?
+4. **CATEGORIZE**: Based on the above, what is the SALT category?
+
+**Step 2: Extract structured data using the function call**
+
+After your thinking, call the extract_patient_data function with all the extracted information.
+
+Use null for any field where information is not provided or you are uncertain.
+
 Patient Description:
 {description}
 
-Output a JSON object with the following structure:
-{{
-  "patient_id": null,
-  "name": "string (use 'Unknown' if not provided)",
-  "age": number or null,
-  "gender": "Male" | "Female" | "Unknown" | null,
-  "salt_assessment": {{
-    "can_walk": boolean or null,
-    "can_wave": boolean or null,
-    "obeys_commands": boolean or null,
-    "has_peripheral_pulse": boolean or null,
-    "in_respiratory_distress": boolean or null,
-    "hemorrhage_controlled": boolean or null,
-    "lifesaving_intervention_performed": "string describing LSI" or null
-  }} or null,
-  "vital_signs": {{
-    "heart_rate": number or null,
-    "blood_pressure": {{
-      "systolic": number or null,
-      "diastolic": number or null
-    }},
-    "respiratory_rate": number or null,
-    "oxygen_saturation": number or null,
-    "temperature": number or null
-  }} or null,
-  "consciousness": {{
-    "eye_response": number (1-4) or null,
-    "verbal_response": number (1-5) or null,
-    "motor_response": number (1-6) or null,
-    "total_score": number (3-15) or null
-  }} or null,
-  "acuity": "Dead" | "Expectant" | "Immediate" | "Delayed" | "Minimal" | "Undefined" | null,
-  "injuries": [
-    {{
-      "locations": ["Head" | "Neck" | "Chest" | "Back" | "Pelvis" | "Abdomen" | "Limbs (Upper)" | "Limbs (Lower)"],
-      "mechanisms": ["Blunt" | "Penetrating" | "Thermal" | "Blast" | "Drowning" | "Chemical" | "Radiation" | "Electrical" | "Hypothermia" | "Other"],
-      "severity": "Dead" | "Expectant" | "Immediate" | "Delayed" | "Minimal",
-      "description": "string"
-    }}
-  ] or null,
-  "required_medical_capabilities": {{
-    "trauma_center": boolean or null,
-    "neurosurgical": boolean or null,
-    "orthopedic": boolean or null,
-    "ophthalmology": boolean or null,
-    "burn": boolean or null,
-    "pediatric": boolean or null,
-    "obstetric": boolean or null,
-    "cardiac": boolean or null,
-    "thoracic": boolean or null,
-    "vascular": boolean or null,
-    "ent": boolean or null,
-    "hepatobiliary": boolean or null
-  }} or null,
-  "required_medical_resources": {{
-    "ward": number or null,
-    "ordinary_icu": number or null,
-    "operating_room": number or null,
-    "ventilator": number or null,
-    "prbc_unit": number or null,
-    "isolation": number or null,
-    "decontamination_unit": number or null,
-    "ct_scanner": number or null,
-    "oxygen_cylinder": number or null,
-    "interventional_radiology": number or null
-  }} or null,
-  "description": "string (original or summarized description)",
-  "predicted_death_timestamp": number (unix timestamp) or null,
-  "status": "Unassigned",
-  "assigned_facility": null,
-  "action_logs": ["string"] or [],
-  "deceased": boolean or null,
-  "location": {{
-    "latitude": number or null,
-    "longitude": number or null
-  }} or null
-}}
-
-Guidelines for SALT Triage:
-- **Sort Phase**: Determine if patient can walk, wave, or is still
-- **Assess Phase**: Evaluate pulse, respiratory distress, hemorrhage control, command following
-- **LSI Phase**: Note any lifesaving interventions performed
-- **Categorize**:
-  - Dead if not breathing after airway opening
-  - Expectant if breathing but expectant (resource-limited survival)
-  - Immediate if fails any assessment but salvageable
-  - Delayed if passes all assessments but has serious injuries
-  - Minimal if passes all assessments with minor injuries only
-- Use null for any field where information is not provided or uncertain
-- Always set patient_id to null (will be auto-generated as UUID)
-- Set deceased=true only for Dead category
-- Set predicted_death_timestamp based on category (Expectant/Immediate get timestamps, others null)
-
-Output JSON:"""
+Now, first think through the SALT protocol in <thinking> tags, then call the function."""
 
 
 FEW_SHOT_EXAMPLES = """

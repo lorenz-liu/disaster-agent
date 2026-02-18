@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from schemas import PatientType
 from .llm_extractor import LLMExtractor
-from .prompts import PATIENT_EXTRACTION_PROMPT
+from .prompts import PATIENT_EXTRACTION_PROMPT_COT
 from .validation_rules import validate_patient_data
 from .post_processors import post_process_patient_data
 
@@ -77,9 +77,9 @@ class PatientTriageAgent:
             print("-" * 80)
 
         self.load_model()
-        raw_data = self.llm_extractor.extract_patient_data(
+        raw_data, thinking = self.llm_extractor.extract_patient_data(
             description=description,
-            prompt_template=PATIENT_EXTRACTION_PROMPT,
+            prompt_template=PATIENT_EXTRACTION_PROMPT_COT,
         )
 
         if raw_data is None:
@@ -88,6 +88,10 @@ class PatientTriageAgent:
 
         if verbose:
             print("✓ LLM extraction successful")
+            if thinking:
+                print("\nSALT Reasoning Process:")
+                print(thinking)
+            print()
 
         # Step 2: Post-Processing
         if verbose:
