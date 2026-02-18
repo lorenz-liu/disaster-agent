@@ -1,13 +1,20 @@
 # Patient Triage Agent
 
-Hybrid LLM + Rule-Based system for extracting structured patient data from natural language descriptions.
+Hybrid LLM + Rule-Based system for extracting structured patient data from natural language descriptions using SALT triage protocol.
 
 ## Architecture
 
 ```
-Natural Language Description 
+Natural Language Description
          ↓
-    LLM Extraction (Local GPT-OSS-20B)
+    LLM Extraction with Chain of Thought
+    (Local vLLM or OpenRouter API)
+         ↓
+    <thinking> SALT Protocol Reasoning
+    (Sort → Assess → LSI → Categorize)
+         ↓
+    Structured Output via Function Calling
+    (OpenAI-compatible tool schema)
          ↓
     Post-Processing (Calculate derived fields)
          ↓
@@ -18,31 +25,68 @@ Natural Language Description
     Structured Patient JSON
 ```
 
+## Key Features
+
+### Chain of Thought Reasoning
+The LLM is instructed to think through the SALT protocol step-by-step inside `<thinking>` tags before generating structured output:
+
+1. **SORT Phase**: Assess if patient can walk, wave, or is still
+2. **ASSESS Phase**: Evaluate pulse, respiratory distress, hemorrhage control, command following
+3. **LSI Phase**: Note any lifesaving interventions performed
+4. **CATEGORIZE**: Determine SALT category based on assessment
+
+This explicit reasoning process improves accuracy and provides transparency into the triage decision-making.
+
+### Structured Output via Function Calling
+Uses OpenAI-compatible function calling (tool use) to guarantee:
+- Valid JSON structure
+- Correct data types (objects, arrays, integers, booleans)
+- Proper nesting of complex fields (vital_signs, injuries, etc.)
+- Elimination of parsing errors
+
+The function schema (`schema_definition.py`) defines the exact structure expected, ensuring the LLM outputs properly formatted data.
+
+### Platform Flexibility
+Supports two inference platforms:
+- **Local**: vLLM for on-premise model inference
+- **OpenRouter**: Cloud API for quick testing and deployment
+
+Configure via `config.py` by setting `PLATFORM = "local"` or `PLATFORM = "openrouter"`.
+
 ## Components
 
 ### 1. LLM Extractor (`llm_extractor.py`)
-- Loads and runs local GPT-OSS-20B model
-- Extracts structured data from natural language
-- Handles JSON parsing from model output
+- Supports both local vLLM and OpenRouter API platforms
+- Implements chain of thought extraction with `<thinking>` tags
+- Uses OpenAI function calling for structured output
+- Extracts and returns both patient data and reasoning process
+- Handles JSON parsing from function call responses
 
 ### 2. Prompt Templates (`prompts.py`)
-- Configurable prompts for LLM
-- Few-shot examples
-- **Modify here** to adjust LLM behavior without changing code
+- Chain of thought prompt (`PATIENT_EXTRACTION_PROMPT_COT`)
+- Comprehensive SALT protocol instructions
+- Explicit two-step process: think first, then extract
+- **Modify here** to adjust LLM reasoning and behavior
 
-### 3. Post-Processors (`post_processors.py`)
+### 3. Schema Definition (`schema_definition.py`)
+- OpenAI function/tool schema for structured output
+- Defines exact JSON structure with types and constraints
+- Ensures proper nesting of complex objects
+- **Modify here** to change output structure
+
+### 4. Post-Processors (`post_processors.py`)
 - Calculate derived fields (GCS total, acuity, mortality risk)
 - Apply medical logic and triage algorithms
 - **Modify here** to change calculation logic
 
 Available post-processors:
-- `GCSCalculator`: Calculate Glasgow Coma Scale total
-- `AcuityDetermination`: Determine patient acuity using START triage
+- `DefaultValueFiller`: Fill missing fields with defaults (UUID, status, etc.)
+- `GCSCalculator`: Calculate Glasgow Coma Scale total from components
+- `AcuityDetermination`: Determine patient acuity using SALT triage
 - `MortalityPredictor`: Predict death timestamp based on risk factors
 - `ResourceEstimator`: Estimate required medical resources
-- `DefaultValueFiller`: Fill missing fields with defaults
 
-### 4. Validation Rules (`validation_rules.py`)
+### 5. Validation Rules (`validation_rules.py`)
 - Modular validation rules
 - Medical logic consistency checks
 - **Modify here** to add/remove validation rules
@@ -134,22 +178,63 @@ POST_PROCESSORS.append(CustomProcessor())
 
 ### Modifying Prompts
 
-Edit `prompts.py` to change how the LLM extracts data:
+Edit `prompts.py` to change how the LLM reasons and extracts data:
 
 ```python
-PATIENT_EXTRACTION_PROMPT = """
+PATIENT_EXTRACTION_PROMPT_COT = """
 Your custom prompt here...
+Include instructions for <thinking> tags and SALT protocol...
 {description}
 """
+```
+
+### Modifying Function Schema
+
+Edit `schema_definition.py` to change the output structure:
+
+```python
+PATIENT_EXTRACTION_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "extract_patient_data",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                # Add or modify fields here
+            }
+        }
+    }
+}
 ```
 
 ## Requirements
 
 ```bash
-pip install torch transformers pydantic
+pip install torch transformers pydantic python-dotenv openai
+```
+
+For local inference:
+```bash
+pip install vllm
+```
+
+## Configuration
+
+Create a `.env` file for API keys:
+
+```bash
+OPENROUTER_API_KEY=your_api_key_here
+```
+
+Edit `config.py` to set platform:
+
+```python
+PLATFORM = "openrouter"  # or "local"
 ```
 
 ## Model Setup
+
+### For Local Inference
 
 Download GPT-OSS-20B to `/models/gpt-oss-20b`:
 
@@ -158,25 +243,52 @@ Download GPT-OSS-20B to `/models/gpt-oss-20b`:
 huggingface-cli download openai/gpt-oss-20b --local-dir /models/gpt-oss-20b
 ```
 
+### For OpenRouter API
+
+Set your API key in `.env` file and configure `config.py` to use `PLATFORM = "openrouter"`.
+
 ## Examples
 
-Run the example script:
+Run the test suite:
 
 ```bash
-python example_triage.py
+python main.py
 ```
 
 This will:
-1. Process a single patient with verbose output
-2. Show the complete pipeline execution
-3. Save results to `patient_output.json`
+1. Test three patient descriptions with increasing complexity
+2. Show chain of thought reasoning in `<thinking>` tags (verbose mode)
+3. Display the complete pipeline execution
+4. Validate medical logic and schema compliance
 
 ## Pipeline Details
 
-### Stage 1: LLM Extraction
-- Model generates structured JSON from natural language
-- Extracts all available fields
-- Handles missing/ambiguous information
+### Stage 1: LLM Extraction with Chain of Thought
+
+**Chain of Thought Process:**
+The model first reasons through the SALT protocol inside `<thinking>` tags:
+
+```
+<thinking>
+1. SORT Phase: Can the patient walk? Can they wave?
+2. ASSESS Phase: Pulse? Respiratory distress? Hemorrhage controlled? Obeys commands?
+3. LSI Phase: What interventions were performed?
+4. CATEGORIZE: Based on above, determine SALT category
+</thinking>
+```
+
+**Structured Output via Function Calling:**
+After reasoning, the model calls the `extract_patient_data` function with properly structured JSON:
+- Guarantees valid JSON structure
+- Enforces correct data types
+- Ensures proper nesting of objects and arrays
+- Eliminates parsing errors
+
+**Benefits:**
+- **Transparency**: See the reasoning behind triage decisions
+- **Accuracy**: Explicit SALT protocol adherence
+- **Reliability**: Function calling ensures valid output structure
+- **Debuggability**: Can trace errors to specific reasoning steps
 
 ### Stage 2: Post-Processing
 - Calculates GCS total from components
@@ -187,6 +299,15 @@ This will:
 
 ### Stage 3: Validation
 The system applies the following validation rules to ensure medical plausibility and data integrity:
+
+**Why Validation is Still Needed:**
+While OpenAI function calling guarantees structural correctness (valid JSON, correct types), it does NOT guarantee:
+- Medical plausibility (e.g., heart rate = 500 bpm is a valid integer but medically impossible)
+- Range constraints (e.g., SpO2 must be 0-100%)
+- Medical logic consistency (e.g., deceased flag must match acuity="Dead")
+- Domain-specific rules (e.g., GCS components must sum to total)
+
+**Validation provides the medical intelligence that function calling cannot.**
 
 #### 1. Required Fields Validation
 - **Description**: Must be present and non-null
