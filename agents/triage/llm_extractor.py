@@ -90,7 +90,7 @@ class LLMExtractor:
         self,
         description: str,
         prompt_template: str,
-        max_new_tokens: int = 2048,
+        max_new_tokens: int = 4096,
         temperature: float = 0.1,
     ) -> Optional[Dict[str, Any]]:
         """
