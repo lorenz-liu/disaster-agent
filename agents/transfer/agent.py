@@ -14,6 +14,7 @@ from schemas import PatientType, HealthcareFacilityType
 from schemas.enums import HealthcareFacilityLevelEnum, IncidentTypeEnum, PatientSeverityEnum
 from .rules import OptimizationRules
 from .solver import TransferOptimizer
+from .reasoning import TransferReasoningGenerator
 
 
 class TransferAgent:
@@ -32,6 +33,8 @@ class TransferAgent:
         facilities: List[HealthcareFacilityType],
         incident_type: str = "MCI",
         current_time: Optional[float] = None,
+        enable_reasoning: bool = True,
+        reasoning_config: Optional[Dict] = None,
     ):
         """
         Initialize the transfer agent.
@@ -41,12 +44,25 @@ class TransferAgent:
             facilities: List of available healthcare facilities
             incident_type: Type of incident ("MCI", "MEDEVAC", "PHE")
             current_time: Current timestamp (defaults to time.time())
+            enable_reasoning: Whether to generate detailed LLM-based reasoning
+            reasoning_config: Optional config for reasoning generator (api_key, model, etc.)
         """
         self.patient = patient
         self.facilities = facilities
         self.incident_type = incident_type
         self.current_time = current_time or time.time()
         self.rules = OptimizationRules
+        self.enable_reasoning = enable_reasoning
+
+        # Initialize reasoning generator if enabled
+        self.reasoning_generator = None
+        if enable_reasoning:
+            try:
+                config = reasoning_config or {}
+                self.reasoning_generator = TransferReasoningGenerator(**config)
+            except Exception as e:
+                print(f"Warning: Failed to initialize reasoning generator: {e}")
+                self.enable_reasoning = False
 
         # Transport speeds (from rules)
         self.traffic_speed_kmh = self.rules.GROUND_TRANSPORT_SPEED_KMH
@@ -448,10 +464,43 @@ class TransferAgent:
                 "destination": None,
             }
 
+        # Find the destination facility object
+        destination_facility = None
+        for facility in self.facilities:
+            if facility.facility_id == decision["destination_id"]:
+                destination_facility = facility
+                break
+
+        # Generate detailed reasoning if enabled
+        detailed_reasoning = f"Optimal facility selected using constraint optimization (ETA: {decision['eta_minutes']:.1f} min)"
+
+        if self.enable_reasoning and self.reasoning_generator and destination_facility:
+            try:
+                # Calculate distance for reasoning
+                distance_km = self._calculate_distance(
+                    self.patient.location.latitude,
+                    self.patient.location.longitude,
+                    destination_facility.location.latitude,
+                    destination_facility.location.longitude
+                )
+
+                detailed_reasoning = self.reasoning_generator.generate_reasoning(
+                    patient=self.patient,
+                    destination=destination_facility,
+                    destination_eta=decision["eta_minutes"],
+                    destination_distance=distance_km,
+                    alternatives=decision.get("alternatives", []),
+                    incident_type=self.incident_type,
+                    solver_status=decision.get("solver_status", "OPTIMAL"),
+                )
+            except Exception as e:
+                print(f"Warning: Failed to generate detailed reasoning: {e}")
+                # Fall back to simple reasoning
+
         # Build destination response
         return {
             "action": "Transfer",
-            "reasoning": f"Optimal facility selected using constraint optimization (ETA: {decision['eta_minutes']:.1f} min)",
+            "reasoning": detailed_reasoning,
             "reasoning_code": decision["reasoning_code"],
             "destination": {
                 "facility_id": decision["destination_id"],

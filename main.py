@@ -77,10 +77,17 @@ def main():
     facilities = load_facilities()
     print(f"✓ Loaded {len(facilities)} facilities")
 
+    # Create transfer agent with reasoning enabled
     transfer_agent = TransferAgent(
         patient=patient,
         facilities=facilities,
         incident_type="MCI",  # Use "MEDEVAC" for evacuation chains
+        enable_reasoning=True,
+        reasoning_config={
+            "api_key": config.OPENROUTER_API_KEY,
+            "model": config.OPENROUTER_MODEL,
+            "base_url": config.OPENROUTER_BASE_URL,
+        }
     )
 
     # Run transfer decision
