@@ -1,0 +1,422 @@
+[
+  {
+    "facility_id": "toronto-western-hospital",
+    "name": "Toronto Western Hospital",
+    "level": 2,
+    "location": {
+      "latitude": 43.6534,
+      "longitude": -79.4055
+    },
+    "medical_resources": {
+      "ward": 20,
+      "ordinary_icu": 4,
+      "operating_room": 4,
+      "ventilator": 5,
+      "prbc_unit": 40,
+      "isolation": 2,
+      "decontamination_unit": 2,
+      "ct_scanner": 2,
+      "oxygen_cylinder": 2,
+      "interventional_radiology": 10
+    },
+    "capabilities": {
+      "trauma_center": false,
+      "neurosurgical": true,
+      "orthopedic": true,
+      "ophthalmology": true,
+      "burn": false,
+      "pediatric": false,
+      "obstetric": false,
+      "cardiac": false,
+      "thoracic": false,
+      "vascular": false,
+      "ent": true,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "toronto-general-hospital",
+    "name": "Toronto General Hospital",
+    "level": 2,
+    "location": {
+      "latitude": 43.659,
+      "longitude": -79.3884
+    },
+    "medical_resources": {
+      "ward": 20,
+      "ordinary_icu": 5,
+      "operating_room": 6,
+      "ventilator": 5,
+      "prbc_unit": 40,
+      "isolation": 4,
+      "decontamination_unit": 8,
+      "ct_scanner": 4,
+      "oxygen_cylinder": 20,
+      "interventional_radiology": 40
+    },
+    "capabilities": {
+      "trauma_center": false,
+      "neurosurgical": false,
+      "orthopedic": false,
+      "ophthalmology": false,
+      "burn": false,
+      "pediatric": false,
+      "obstetric": false,
+      "cardiac": true,
+      "thoracic": true,
+      "vascular": true,
+      "ent": true,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "humber-river-hospital",
+    "name": "Humber River Hospital",
+    "level": 3,
+    "location": {
+      "latitude": 43.7227,
+      "longitude": -79.49
+    },
+    "medical_resources": {
+      "ward": 8,
+      "ordinary_icu": 1,
+      "operating_room": 3,
+      "ventilator": 2,
+      "prbc_unit": 20,
+      "isolation": 1,
+      "decontamination_unit": 1,
+      "ct_scanner": 1,
+      "oxygen_cylinder": 10,
+      "interventional_radiology": 10
+    },
+    "capabilities": {
+      "trauma_center": false,
+      "neurosurgical": false,
+      "orthopedic": true,
+      "ophthalmology": false,
+      "burn": false,
+      "pediatric": false,
+      "obstetric": true,
+      "cardiac": false,
+      "thoracic": false,
+      "vascular": false,
+      "ent": false,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "mount-sinai-hospital",
+    "name": "Mount Sinai Hospital",
+    "level": 2,
+    "location": {
+      "latitude": 43.6574,
+      "longitude": -79.3903
+    },
+    "medical_resources": {
+      "ward": 30,
+      "ordinary_icu": 2,
+      "operating_room": 5,
+      "ventilator": 15,
+      "prbc_unit": 30,
+      "isolation": 2,
+      "decontamination_unit": 20,
+      "ct_scanner": 6,
+      "oxygen_cylinder": 20,
+      "interventional_radiology": 20
+    },
+    "capabilities": {
+      "trauma_center": false,
+      "neurosurgical": false,
+      "orthopedic": false,
+      "ophthalmology": false,
+      "burn": false,
+      "pediatric": false,
+      "obstetric": true,
+      "cardiac": false,
+      "thoracic": false,
+      "vascular": false,
+      "ent": false,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "north-york-general-hospital",
+    "name": "North York General Hospital",
+    "level": 3,
+    "location": {
+      "latitude": 43.7688,
+      "longitude": -79.3627
+    },
+    "medical_resources": {
+      "ward": 25,
+      "ordinary_icu": 2,
+      "operating_room": 2,
+      "ventilator": 9,
+      "prbc_unit": 20,
+      "isolation": 5,
+      "decontamination_unit": 5,
+      "ct_scanner": 4,
+      "oxygen_cylinder": 20,
+      "interventional_radiology": 20
+    },
+    "capabilities": {
+      "trauma_center": false,
+      "neurosurgical": false,
+      "orthopedic": true,
+      "ophthalmology": false,
+      "burn": false,
+      "pediatric": false,
+      "obstetric": true,
+      "cardiac": false,
+      "thoracic": false,
+      "vascular": false,
+      "ent": false,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "sunnybrook-health-sciences-centre",
+    "name": "Sunnybrook Health Sciences Centre",
+    "level": 1,
+    "location": {
+      "latitude": 43.7228,
+      "longitude": -79.3729
+    },
+    "medical_resources": {
+      "ward": 50,
+      "ordinary_icu": 10,
+      "operating_room": 20,
+      "ventilator": 20,
+      "prbc_unit": 50,
+      "isolation": 10,
+      "decontamination_unit": 10,
+      "ct_scanner": 10,
+      "oxygen_cylinder": 20,
+      "interventional_radiology": 40
+    },
+    "capabilities": {
+      "trauma_center": true,
+      "neurosurgical": true,
+      "orthopedic": true,
+      "ophthalmology": true,
+      "burn": true,
+      "pediatric": false,
+      "obstetric": true,
+      "cardiac": true,
+      "thoracic": true,
+      "vascular": true,
+      "ent": true,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "st-josephs-health-centre",
+    "name": "St. Joseph's Health Centre",
+    "level": 3,
+    "location": {
+      "latitude": 43.6402,
+      "longitude": -79.4501
+    },
+    "medical_resources": {
+      "ward": 10,
+      "ordinary_icu": 2,
+      "operating_room": 2,
+      "ventilator": 4,
+      "prbc_unit": 10,
+      "isolation": 2,
+      "decontamination_unit": 5,
+      "ct_scanner": 0,
+      "oxygen_cylinder": 4,
+      "interventional_radiology": 10
+    },
+    "capabilities": {
+      "trauma_center": false,
+      "neurosurgical": false,
+      "orthopedic": false,
+      "ophthalmology": false,
+      "burn": false,
+      "pediatric": false,
+      "obstetric": false,
+      "cardiac": false,
+      "thoracic": false,
+      "vascular": false,
+      "ent": false,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "scarborough-general-hospital",
+    "name": "Scarborough General Hospital",
+    "level": 3,
+    "location": {
+      "latitude": 43.7557,
+      "longitude": -79.2458
+    },
+    "medical_resources": {
+      "ward": 10,
+      "ordinary_icu": 2,
+      "operating_room": 4,
+      "ventilator": 2,
+      "prbc_unit": 20,
+      "isolation": 5,
+      "decontamination_unit": 10,
+      "ct_scanner": 4,
+      "oxygen_cylinder": 10,
+      "interventional_radiology": 10
+    },
+    "capabilities": {
+      "trauma_center": false,
+      "neurosurgical": false,
+      "orthopedic": true,
+      "ophthalmology": false,
+      "burn": false,
+      "pediatric": false,
+      "obstetric": false,
+      "cardiac": false,
+      "thoracic": false,
+      "vascular": false,
+      "ent": false,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "william-osler-health-centre",
+    "name": "William Osler Health Centre",
+    "level": 3,
+    "location": {
+      "latitude": 43.7294,
+      "longitude": -79.5976
+    },
+    "medical_resources": {
+      "ward": 20,
+      "ordinary_icu": 3,
+      "operating_room": 2,
+      "ventilator": 2,
+      "prbc_unit": 20,
+      "isolation": 4,
+      "decontamination_unit": 10,
+      "ct_scanner": 0,
+      "oxygen_cylinder": 10,
+      "interventional_radiology": 10
+    },
+    "capabilities": {
+      "trauma_center": false,
+      "neurosurgical": false,
+      "orthopedic": true,
+      "ophthalmology": false,
+      "burn": false,
+      "pediatric": false,
+      "obstetric": true,
+      "cardiac": false,
+      "thoracic": false,
+      "vascular": false,
+      "ent": false,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "st-michaels-hospital",
+    "name": "St. Michael's Hospital",
+    "level": 1,
+    "location": {
+      "latitude": 43.6537,
+      "longitude": -79.3778
+    },
+    "medical_resources": {
+      "ward": 30,
+      "ordinary_icu": 12,
+      "operating_room": 15,
+      "ventilator": 15,
+      "prbc_unit": 30,
+      "isolation": 10,
+      "decontamination_unit": 10,
+      "ct_scanner": 10,
+      "oxygen_cylinder": 20,
+      "interventional_radiology": 40
+    },
+    "capabilities": {
+      "trauma_center": true,
+      "neurosurgical": true,
+      "orthopedic": true,
+      "ophthalmology": true,
+      "burn": false,
+      "pediatric": false,
+      "obstetric": false,
+      "cardiac": true,
+      "thoracic": true,
+      "vascular": true,
+      "ent": true,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "michael-garron-hospital",
+    "name": "Michael Garron Hospital",
+    "level": 3,
+    "location": {
+      "latitude": 43.6899,
+      "longitude": -79.3249
+    },
+    "medical_resources": {
+      "ward": 20,
+      "ordinary_icu": 1,
+      "operating_room": 1,
+      "ventilator": 2,
+      "prbc_unit": 20,
+      "isolation": 3,
+      "decontamination_unit": 10,
+      "ct_scanner": 2,
+      "oxygen_cylinder": 10,
+      "interventional_radiology": 10
+    },
+    "capabilities": {
+      "trauma_center": false,
+      "neurosurgical": false,
+      "orthopedic": false,
+      "ophthalmology": false,
+      "burn": false,
+      "pediatric": false,
+      "obstetric": false,
+      "cardiac": false,
+      "thoracic": false,
+      "vascular": false,
+      "ent": false,
+      "hepatobiliary": false
+    }
+  },
+  {
+    "facility_id": "hospital-for-sick-children",
+    "name": "The Hospital for Sick Children",
+    "level": 1,
+    "location": {
+      "latitude": 43.6576,
+      "longitude": -79.3865
+    },
+    "medical_resources": {
+      "ward": 20,
+      "ordinary_icu": 10,
+      "operating_room": 5,
+      "ventilator": 5,
+      "prbc_unit": 50,
+      "isolation": 10,
+      "decontamination_unit": 10,
+      "ct_scanner": 5,
+      "oxygen_cylinder": 20,
+      "interventional_radiology": 40
+    },
+    "capabilities": {
+      "trauma_center": true,
+      "neurosurgical": true,
+      "orthopedic": true,
+      "ophthalmology": true,
+      "burn": false,
+      "pediatric": true,
+      "obstetric": false,
+      "cardiac": true,
+      "thoracic": true,
+      "vascular": true,
+      "ent": true,
+      "hepatobiliary": false
+    }
+  }
+]

@@ -4,18 +4,16 @@ Transfer Agent - NATO MEDEVAC Evacuation Chain Decision Engine
 Implements NATO medical doctrine (AJP-4.10) for MEDEVAC operations,
 creating evacuation chains that follow the Role 1 → Role 2 → Role 3 progression
 with strict adherence to the 10-1-2 timeline (Golden Hour and Damage Control).
+
+Uses OR-Tools constraint optimization for single-destination assignments (MCI/PHE).
 """
 
 import time
 from typing import Dict, List, Optional, Tuple
 from schemas import PatientType, HealthcareFacilityType
 from schemas.enums import HealthcareFacilityLevelEnum, IncidentTypeEnum, PatientSeverityEnum
-
-
-# NATO Timeline Constants (in minutes)
-NATO_INITIAL_AID_MINUTES = 10  # Initial aid at point of injury
-NATO_ROLE1_MINUTES = 60  # Role 1 (Level 3) - Golden Hour
-NATO_ROLE2_MINUTES = 120  # Role 2 (Level 2) - Damage Control
+from .rules import OptimizationRules
+from .solver import TransferOptimizer
 
 
 class TransferAgent:
@@ -48,20 +46,11 @@ class TransferAgent:
         self.facilities = facilities
         self.incident_type = incident_type
         self.current_time = current_time or time.time()
+        self.rules = OptimizationRules
 
-        # Transport speeds
-        self.traffic_speed_kmh = 50.0  # Ground transport
-        self.helicopter_speed_kmh = 200.0  # Air transport
-
-        # Acuity weights (neural component)
-        self.acuity_weights = {
-            "Dead": 0,
-            "Expectant": 80,
-            "Immediate": 100,
-            "Delayed": 50,
-            "Minimal": 10,
-            "Undefined": 10,
-        }
+        # Transport speeds (from rules)
+        self.traffic_speed_kmh = self.rules.GROUND_TRANSPORT_SPEED_KMH
+        self.helicopter_speed_kmh = self.rules.AIR_TRANSPORT_SPEED_KMH
 
     def _calculate_distance(
         self, lat1: float, lon1: float, lat2: float, lon2: float
@@ -118,7 +107,7 @@ class TransferAgent:
 
     def _get_patient_weight(self) -> int:
         """Get neural priority weight based on acuity."""
-        return self.acuity_weights.get(self.patient.acuity, 10)
+        return self.rules.get_acuity_weight(self.patient.acuity)
 
     def _calculate_slack_time(self) -> float:
         """
@@ -322,7 +311,7 @@ class TransferAgent:
 
         if level3_facilities:
             role1_facility, role1_eta = self._find_best_facility(
-                level3_facilities, current_lat, current_lon, NATO_ROLE1_MINUTES - cumulative_time
+                level3_facilities, current_lat, current_lon, self.rules.NATO_ROLE1_MINUTES - cumulative_time
             )
 
             if role1_facility:
@@ -334,7 +323,7 @@ class TransferAgent:
                     "facility_name": role1_facility.name,
                     "eta_minutes": role1_eta,
                     "cumulative_time": cumulative_time,
-                    "timeline_compliance": cumulative_time <= NATO_ROLE1_MINUTES,
+                    "timeline_compliance": cumulative_time <= self.rules.NATO_ROLE1_MINUTES,
                 })
                 if role1_facility.location:
                     current_lat = role1_facility.location.latitude
@@ -345,7 +334,7 @@ class TransferAgent:
 
         if level2_facilities:
             role2_facility, role2_eta = self._find_best_facility(
-                level2_facilities, current_lat, current_lon, NATO_ROLE2_MINUTES - cumulative_time
+                level2_facilities, current_lat, current_lon, self.rules.NATO_ROLE2_MINUTES - cumulative_time
             )
 
             if role2_facility:
@@ -357,7 +346,7 @@ class TransferAgent:
                     "facility_name": role2_facility.name,
                     "eta_minutes": role2_eta,
                     "cumulative_time": cumulative_time,
-                    "timeline_compliance": cumulative_time <= NATO_ROLE2_MINUTES,
+                    "timeline_compliance": cumulative_time <= self.rules.NATO_ROLE2_MINUTES,
                 })
                 if role2_facility.location:
                     current_lat = role2_facility.location.latitude
@@ -417,9 +406,13 @@ class TransferAgent:
 
     def _build_single_destination(self, slack_time: float) -> Dict:
         """
-        Build single destination decision for MCI/PHE incidents.
+        Build single destination decision for MCI/PHE incidents using OR-Tools optimization.
 
-        Falls back to closest capable facility.
+        Uses constraint-based optimization to find the best facility considering:
+        - Time cost (ETA × acuity weight)
+        - Capability matching
+        - Resource availability
+        - Resource stewardship (don't waste scarce capabilities)
         """
         if not self.patient.location:
             return {
@@ -429,36 +422,42 @@ class TransferAgent:
                 "destination": None,
             }
 
-        best_facility, best_eta = self._find_best_facility(
-            self.facilities,
-            self.patient.location.latitude,
-            self.patient.location.longitude,
-            slack_time,
+        # Use OR-Tools optimizer for single-destination assignment
+        optimizer = TransferOptimizer(
+            patients=[self.patient],
+            facilities=self.facilities,
+            current_time=self.current_time,
         )
 
-        if not best_facility:
+        results = optimizer.solve()
+        decision = results.get(self.patient.patient_id)
+
+        if not decision:
             return {
                 "action": "Forfeit",
-                "reasoning": "No suitable facility available within survival window",
+                "reasoning": "No suitable facility available",
                 "reasoning_code": "NO_FACILITIES_AVAILABLE",
                 "destination": None,
             }
 
-        if best_eta > slack_time:
+        if decision["action"] == "Forfeit":
             return {
                 "action": "Forfeit",
-                "reasoning": f"Patient will not survive transport (ETA: {best_eta:.1f} min, survival window: {slack_time:.1f} min)",
-                "reasoning_code": "DEAD_ON_ARRIVAL",
+                "reasoning": f"Patient cannot be transferred ({decision['reasoning_code']})",
+                "reasoning_code": decision["reasoning_code"],
                 "destination": None,
             }
 
+        # Build destination response
         return {
             "action": "Transfer",
-            "reasoning": f"Optimal facility selected (ETA: {best_eta:.1f} min)",
-            "reasoning_code": "TRANSFER_OPTIMAL",
+            "reasoning": f"Optimal facility selected using constraint optimization (ETA: {decision['eta_minutes']:.1f} min)",
+            "reasoning_code": decision["reasoning_code"],
             "destination": {
-                "facility_id": best_facility.facility_id,
-                "facility_name": best_facility.name,
-                "eta_minutes": best_eta,
+                "facility_id": decision["destination_id"],
+                "facility_name": decision["destination_name"],
+                "eta_minutes": decision["eta_minutes"],
             },
+            "alternatives": decision.get("alternatives", []),
+            "solver_status": decision.get("solver_status"),
         }
