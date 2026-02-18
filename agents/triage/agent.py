@@ -61,6 +61,8 @@ class PatientTriageAgent:
             description: Natural language patient description
             validate: Whether to run validation rules
             verbose: Whether to print detailed processing information
+            default_location: Optional default location dict with 'latitude' and 'longitude'
+                            keys to use if location is not provided in description
 
         Returns:
             PatientType object if successful, None if extraction fails
@@ -101,6 +103,12 @@ class PatientTriageAgent:
             print("-" * 80)
 
         processed_data = post_process_patient_data(raw_data)
+
+        # Apply default location if not provided
+        if default_location and not processed_data.get('location'):
+            processed_data['location'] = default_location
+            if verbose:
+                print(f"  - Applied default location: {default_location['latitude']:.4f}°N, {default_location['longitude']:.4f}°W")
 
         if verbose:
             print("✓ Post-processing complete")

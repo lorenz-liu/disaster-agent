@@ -31,6 +31,12 @@ def load_facilities():
 def main():
     """Run the complete triage → transfer workflow."""
 
+    # BMO Field (Toronto) coordinates as default location
+    DEFAULT_LOCATION = {
+        "latitude": 43.6332,
+        "longitude": -79.4189
+    }
+
     description = input("Describe the patient: ")
     if config.PLATFORM == "local":
         triage_agent = PatientTriageAgent(
@@ -50,7 +56,12 @@ def main():
         raise ValueError(f"Unknown platform: {config.PLATFORM}")
 
     # Run triage
-    patient = triage_agent.triage_patient(description, validate=True, verbose=True)
+    patient = triage_agent.triage_patient(
+        description,
+        validate=True,
+        verbose=True,
+        default_location=DEFAULT_LOCATION
+    )
 
     if not patient:
         print("\n✗ Triage failed - cannot proceed to transfer")
