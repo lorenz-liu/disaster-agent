@@ -32,7 +32,7 @@ class SALTAssessment(BaseModel):
 
 class PatientVitalSignsType(BaseModel):
     heart_rate: Optional[float] = None
-    blood_pressure: BloodPressure
+    blood_pressure: Optional[BloodPressure] = None
     respiratory_rate: Optional[float] = None
     oxygen_saturation: Optional[float] = None
     temperature: Optional[float] = None
