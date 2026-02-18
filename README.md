@@ -6,134 +6,105 @@ AI-powered disaster management system for patient triage and transfer optimizati
 
 This system implements a complete workflow for disaster response:
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         DISASTER AGENT WORKFLOW                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    Start([Natural Language Patient Description]) --> TriageAgent
 
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  INPUT: Natural Language Patient Description                                │
-│  ─────────────────────────────────────────────────────────────────────────  │
-│  "52-year-old male, motorcycle accident. Severe chest and leg pain.         │
-│   Heart rate 105, BP 110/70, breathing rate 20, O2 95%. Alert and           │
-│   responsive. Suspected rib fractures and tibia fracture."                  │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 1: TRIAGE AGENT                                                       │
-│  ═══════════════════════════════════════════════════════════════════════    │
-│                                                                             │
-│  Tech Stack:                                                                │
-│  • OpenAI/OpenRouter API (LLM)                                              │
-│  • Function Calling (Structured Output)                                     │
-│  • SALT Protocol (Sort, Assess, Lifesaving, Treatment)                      │
-│  • Chain-of-Thought Reasoning (<thinking> tags)                             │
-│  • Pydantic Schemas (Validation)                                            │
-│                                                                             │
-│  Process:                                                                   │
-│  1. Parse natural language → Extract vital signs, injuries, location        │
-│  2. Apply SALT protocol → Assess acuity (Immediate/Delayed/Minimal)         │
-│  3. Predict mortality → Calculate survival window                           │
-│  4. Determine required capabilities → trauma_center, orthopedic, etc.       │
-│  5. Validate output → Ensure schema compliance                              │
-│                                                                             │
-│  Output: PatientType (Pydantic Model)                                       │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  Structured Patient Data                                                    │
-│  ─────────────────────────────────────────────────────────────────────────  │
-│  {                                                                          │
-│    "patient_id": "P-001",                                                   │
-│    "name": "Michael Chen",                                                  │
-│    "age": 52,                                                               │
-│    "acuity": "Delayed",                                                     │
-│    "vital_signs": { "heart_rate": 105, "blood_pressure": "110/70", ... },   │
-│    "required_medical_capabilities": {                                       │
-│      "trauma_center": true,                                                 │
-│      "orthopedic": true,                                                    │
-│      "cardiac": false                                                       │
-│    },                                                                       │
-│    "predicted_death_timestamp": 1708192800,                                 │
-│    "location": { "latitude": 43.6708, "longitude": -79.3860 }               │
-│  }                                                                          │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 2: TRANSFER AGENT                                                     │
-│  ═══════════════════════════════════════════════════════════════════════    │
-│                                                                             │
-│  Tech Stack:                                                                │
-│  • Google OR-Tools (SCIP Solver)                                            │
-│  • Constraint Programming (CP-SAT)                                          │
-│  • NATO AJP-4.10 Doctrine (MEDEVAC)                                         │
-│  • Haversine Distance Calculation                                           │
-│  • Neuro-Symbolic Optimization                                              │
-│                                                                             │
-│  Decision Logic:                                                            │
-│  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │  Incident Type?                                                       │  │
-│  │         │                                                             │  │
-│  │    ┌────┴────┐                                                        │  │
-│  │    │         │                                                        │  │
-│  │  MEDEVAC   MCI/PHE                                                    │  │
-│  │    │         │                                                        │  │
-│  │    ▼         ▼                                                        │  │
-│  │  Greedy   OR-Tools                                                    │  │
-│  │  Chain    Optimizer                                                   │  │
-│  │    │         │                                                        │  │
-│  │    │    ┌────┴────────────────────────────────────────┐               │  │
-│  │    │    │ Decision Variables: x[p,f] ∈ {0,1}          │               │  │
-│  │    │    │ Constraints:                                │               │  │
-│  │    │    │  • Each patient → 1 facility                │               │  │
-│  │    │    │  • Resource capacity limits                 │               │  │
-│  │    │    │ Objective: Minimize                         │               │  │
-│  │    │    │  • Time Cost (ETA × Acuity Weight)          │               │  │
-│  │    │    │  • Capability Mismatch Penalty              │               │  │
-│  │    │    │  • Resource Stress                          │               │  │
-│  │    │    │  • Stewardship Penalty (scarce resources)   │               │  │
-│  │    │    └─────────────────────────────────────────────┘               │  │
-│  │    │                                                                  │  │
-│  │    └─► Role 1 (Level 3) → Role 2 (Level 2) → Role 3 (Level 1)         │  │
-│  │        60 min Golden Hour   120 min Damage Control                    │  │
-│  └───────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │  3. Generate LLM Reasoning (if enabled)                               │  │
-│  │     • Patient profile + Destination + Alternatives → LLM              │  │
-│  │     • Explains medical match, proximity, resource stewardship         │  │
-│  └───────────────────────────────────────────────────────────────────────┘  │
-│                                                                             │
-│  Output: Transfer Decision with Detailed Reasoning                          │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  OUTPUT: Optimal Facility Assignment                                        │
-│  ─────────────────────────────────────────────────────────────────────────  │
-│  {                                                                          │
-│    "action": "Transfer",                                                    │
-│    "reasoning": "St. Michael's Hospital was selected as the optimal         │
-│                  destination for this 25-year-old patient with a broken     │
-│                  right arm. The facility provides the required orthopedic   │
-│                  capabilities needed for fracture management, with an       │
-│                  excellent ETA of just 8.2 minutes...",                     │
-│    "reasoning_code": "TRANSFER_OPTIMAL",                                    │
-│    "destination": {                                                         │
-│      "facility_id": "st-michaels-hospital",                                 │
-│      "facility_name": "St. Michael's Hospital",                             │
-│      "eta_minutes": 8.2                                                     │
-│    },                                                                       │
-│    "alternatives": [                                                        │
-│      { "facility_name": "Toronto General Hospital", "eta_minutes": 10.5 },  │
-│      { "facility_name": "Sunnybrook Health Sciences", "eta_minutes": 12.1 } │
-│    ],                                                                       │
-│    "solver_status": "OPTIMAL"                                               │
-│  }                                                                          │
-└─────────────────────────────────────────────────────────────────────────────┘
+    subgraph TriageAgent["TRIAGE AGENT"]
+        direction TB
+        T1[Parse Natural Language Input]
+        T2[Extract Vital Signs & Injuries]
+        T3[Apply SALT Protocol]
+        T4[Assess Acuity Level]
+        T5[Predict Mortality Window]
+        T6[Determine Required Capabilities]
+        T7[Validate Schema]
+
+        T1 --> T2 --> T3 --> T4 --> T5 --> T6 --> T7
+
+        TechStack1["Tech Stack:<br/>• OpenAI/OpenRouter API<br/>• Function Calling<br/>• SALT Protocol<br/>• Chain-of-Thought<br/>• Pydantic Schemas"]
+    end
+
+    TriageAgent --> PatientData[(Structured Patient Data<br/>PatientType)]
+
+    PatientData --> TransferAgent
+    Facilities[(Healthcare Facilities<br/>HealthcareFacilityType)] --> TransferAgent
+
+    subgraph TransferAgent["TRANSFER AGENT"]
+        direction TB
+        TA1{Incident Type?}
+        TA2[MEDEVAC<br/>Greedy Chain]
+        TA3[MCI/PHE<br/>OR-Tools Optimizer]
+
+        TA1 -->|MEDEVAC| TA2
+        TA1 -->|MCI PHE| TA3
+
+        TA2 --> Chain[Role 1 → Role 2 → Role 3<br/>60min Golden Hour<br/>120min Damage Control]
+
+        TA3 --> Optimize[Constraint Optimization<br/>• Minimize ETA × Acuity<br/>• Capability Match<br/>• Resource Capacity<br/>• Stewardship Penalty]
+
+        Chain --> LLM[Generate LLM Reasoning]
+        Optimize --> LLM
+
+        TechStack2["Tech Stack:<br/>• Google OR-Tools<br/>• CP-SAT Solver<br/>• NATO AJP-4.10<br/>• Neuro-Symbolic AI"]
+    end
+
+    TransferAgent --> Output([Optimal Facility Assignment<br/>+ Reasoning + Alternatives])
+
+    style TriageAgent fill:#e1f5ff,stroke:#0066cc,stroke-width:2px
+    style TransferAgent fill:#fff4e1,stroke:#cc6600,stroke-width:2px
+    style PatientData fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style Facilities fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style Output fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style Start fill:#fff,stroke:#333,stroke-width:2px
+```
+
+### System Dataflow
+
+```mermaid
+graph LR
+    subgraph Input
+        NL[Natural Language<br/>Patient Description]
+    end
+
+    subgraph TriageOutput["Triage Agent Output"]
+        PD[PatientType Schema]
+        VS[Vital Signs]
+        INJ[Injuries]
+        ACU[Acuity Level]
+        CAP[Required Capabilities]
+        MOR[Mortality Prediction]
+        LOC[Location]
+    end
+
+    subgraph TransferInput["Transfer Agent Input"]
+        PT[Patient Data]
+        FAC[Facility List]
+        RULES[Optimization Rules]
+    end
+
+    subgraph TransferOutput["Transfer Agent Output"]
+        DEST[Destination Facility]
+        ETA[ETA Minutes]
+        REASON[LLM Reasoning]
+        ALT[Alternative Facilities]
+        STATUS[Solver Status]
+    end
+
+    NL --> PD
+    PD --> VS & INJ & ACU & CAP & MOR & LOC
+
+    VS & INJ & ACU & CAP & MOR & LOC --> PT
+    PT --> DEST
+    FAC --> DEST
+    RULES --> DEST
+
+    DEST --> ETA & REASON & ALT & STATUS
+
+    style Input fill:#e3f2fd,stroke:#1976d2
+    style TriageOutput fill:#e8f5e9,stroke:#388e3c
+    style TransferInput fill:#fff3e0,stroke:#f57c00
+    style TransferOutput fill:#f3e5f5,stroke:#7b1fa2
 ```
 
 ### Workflow
