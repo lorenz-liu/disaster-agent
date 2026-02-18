@@ -72,6 +72,8 @@ Write a clear, concise explanation (2-3 paragraphs) of why this facility was sel
 
 Be specific and reference actual data points. Write in a professional medical tone suitable for emergency coordinators.
 
+IMPORTANT: Keep the reasoning in one paragraph, do not use any styling formatting like markdown or latex, make sure to use plain text.
+
 Your explanation:"""
 
 
