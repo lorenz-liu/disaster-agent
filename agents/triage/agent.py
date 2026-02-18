@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 from pydantic import ValidationError
 
 from schemas import PatientType
-from .llm_extractor import LocalLLMExtractor
+from .llm_extractor import LLMExtractor
 from .prompts import PATIENT_EXTRACTION_PROMPT
 from .validation_rules import validate_patient_data
 from .post_processors import post_process_patient_data
@@ -17,20 +17,22 @@ class PatientTriageAgent:
     Hybrid agent for extracting structured patient data from natural language.
 
     Pipeline:
-    1. LLM extraction (using local model)
+    1. LLM extraction (local vLLM or OpenRouter API)
     2. Post-processing (calculate derived fields)
     3. Validation (check medical logic and constraints)
     4. Pydantic validation (ensure schema compliance)
     """
 
-    def __init__(self, model_path: str = "/models/gpt-oss-20b"):
+    def __init__(self, platform: str = "local", **kwargs):
         """
         Initialize the triage agent.
 
         Args:
-            model_path: Path to the local LLM model
+            platform: "local" for vLLM or "openrouter" for API
+            **kwargs: Platform-specific configuration (e.g., model_path, api_key)
         """
-        self.llm_extractor = LocalLLMExtractor(model_path=model_path)
+        self.platform = platform
+        self.llm_extractor = LLMExtractor(platform=platform, **kwargs)
         self.model_loaded = False
 
     def load_model(self):

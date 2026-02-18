@@ -4,6 +4,7 @@ Patient Triage Agent - Test Cases
 
 import json
 from agents.triage import PatientTriageAgent
+import config
 
 
 def test_minimal_description():
@@ -14,7 +15,7 @@ def test_minimal_description():
 
     description = "Sarah Johnson, 28 years old, female, broken arm from a fall"
 
-    agent = PatientTriageAgent(model_path="/models/gpt-oss-20b")
+    agent = create_agent()
     patient = agent.triage_patient(description, validate=True, verbose=True)
 
     if patient:
@@ -41,7 +42,7 @@ def test_moderate_description():
     Alert and responsive. Suspected rib fractures and possible tibia fracture.
     """
 
-    agent = PatientTriageAgent(model_path="/models/gpt-oss-20b")
+    agent = create_agent()
     patient = agent.triage_patient(description, validate=True, verbose=True)
 
     if patient:
@@ -111,7 +112,7 @@ def test_detailed_description():
     - 14:35 - Patient loaded into ambulance
     """
 
-    agent = PatientTriageAgent(model_path="/models/gpt-oss-20b")
+    agent = create_agent()
     patient = agent.triage_patient(description, validate=True, verbose=True)
 
     if patient:
@@ -125,11 +126,36 @@ def test_detailed_description():
     return patient
 
 
+def create_agent():
+    """Create agent based on config settings."""
+    if config.PLATFORM == "local":
+        return PatientTriageAgent(
+            platform="local",
+            model_path=config.LOCAL_MODEL_PATH,
+            gpu_memory_utilization=config.LOCAL_MODEL_GPU_MEMORY_UTILIZATION,
+            tensor_parallel_size=config.LOCAL_MODEL_TENSOR_PARALLEL_SIZE,
+        )
+    elif config.PLATFORM == "openrouter":
+        return PatientTriageAgent(
+            platform="openrouter",
+            api_key=config.OPENROUTER_API_KEY,
+            model=config.OPENROUTER_MODEL,
+            base_url=config.OPENROUTER_BASE_URL,
+        )
+    else:
+        raise ValueError(f"Unknown platform: {config.PLATFORM}")
+
+
 def main():
     """Run all test cases."""
     print("\n" + "=" * 80)
     print("PATIENT TRIAGE AGENT - TEST SUITE")
     print("=" * 80)
+    print(f"\nPlatform: {config.PLATFORM.upper()}")
+    if config.PLATFORM == "local":
+        print(f"Model: {config.LOCAL_MODEL_PATH}")
+    else:
+        print(f"Model: {config.OPENROUTER_MODEL}")
     print("\nTesting with three levels of description complexity:\n")
     print("1. Minimal: Basic demographics + brief condition")
     print("2. Moderate: Demographics + vital signs + injury details")
